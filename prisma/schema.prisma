@@ -1,0 +1,734 @@
+// ============================================================================
+// Lectiva Edu — Prisma schema (Postgres / Supabase)
+// 25 tabelas, ENUMs. Nomes de coluna/tabela em snake_case (@map / @@map),
+// campos do código em camelCase. Auth de credenciais vive no Supabase Auth;
+// a tabela `usuario` espelha auth.users pelo mesmo id (uuid).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ----------------------------------------------------------------------------
+// ENUMs
+// ----------------------------------------------------------------------------
+enum Vinculo {
+  Aluno
+  Professor
+  Coordenacao
+  Secretaria
+  Admin
+}
+
+enum SituacaoUsuario {
+  Ativo
+  Inativo
+  Bloqueado
+}
+
+enum TipoCurso {
+  MBA
+  PosLatoSensu
+  Capacitacao
+  Extensao
+  Livre
+}
+
+enum ModalidadeCurso {
+  Presencial
+  Hibrida
+  Online
+  EAD
+}
+
+enum SituacaoCurso {
+  Ativo
+  EmFormacaoDeTurma
+  Encerrado
+}
+
+enum SituacaoTurma {
+  EmFormacao
+  EmAndamento
+  Concluida
+}
+
+enum StatusGrade {
+  EmElaboracao
+  Validada
+  Publicada
+}
+
+enum SituacaoProfessor {
+  Ativo
+  Inativo
+}
+
+enum SituacaoAcademica {
+  Ativo
+  Concluinte
+  Inativo
+}
+
+enum SituacaoMatricula {
+  PreMatricula
+  Ativa
+  Trancada
+  Cancelada
+  Concluida
+}
+
+enum StatusDisciplina {
+  Programada
+  EmAndamento
+  Concluida
+}
+
+enum TipoMaterial {
+  Livro
+  Artigo
+  Apostila
+  Video
+  Link
+}
+
+enum Bibliografia {
+  Basica
+  Complementar
+}
+
+enum NivelAcesso {
+  Publico
+  Restrito
+}
+
+enum TipoEvento {
+  Aula
+  Avaliacao
+  Encontro
+  Palestra
+  Recesso
+  Prazo
+  Encerramento
+}
+
+enum ModalidadeEvento {
+  Presencial
+  Online
+}
+
+enum PublicoAlvo {
+  Todos
+  Turma
+  Professores
+  Secretaria
+  Coordenacao
+}
+
+enum Urgencia {
+  Normal
+  Urgente
+}
+
+enum SituacaoComunicado {
+  Publicado
+  Arquivado
+}
+
+enum SituacaoFrequencia {
+  Presente
+  Ausente
+  Justificado
+}
+
+enum TipoEncontro {
+  Presencial
+  Online
+}
+
+enum TipoAvaliacao {
+  Curso
+  Disciplina
+  Professor
+}
+
+enum FormaColeta {
+  Identificada
+  Anonima
+}
+
+enum SituacaoAvaliacao {
+  Aprovado
+  Reprovado
+  Recuperacao
+}
+
+enum TipoCertificado {
+  Conclusao
+  Modulo
+  Disciplina
+  Evento
+  Participacao
+}
+
+enum SituacaoModeloCertificado {
+  Ativo
+  Inativo
+}
+
+enum SituacaoCertificado {
+  Emitido
+  Cancelado
+  Reemitido
+}
+
+enum SituacaoPlano {
+  Adimplente
+  Inadimplente
+}
+
+enum SituacaoParcela {
+  Paga
+  EmAberto
+  Vencida
+}
+
+enum TipoMensagem {
+  Mensagem
+  Duvida
+  Solicitacao
+  Requerimento
+}
+
+enum StatusMensagem {
+  Aberta
+  EmAndamento
+  Respondida
+  Encerrada
+}
+
+enum SituacaoConsentimento {
+  Ativo
+  Revogado
+}
+
+// ----------------------------------------------------------------------------
+// SEGURANÇA E PERMISSÕES
+// ----------------------------------------------------------------------------
+model Usuario {
+  id           String          @id @default(uuid()) @db.Uuid // = auth.users.id
+  nome         String
+  login        String          @unique
+  senhaHash    String?         @map("senha_hash") // gerenciado pelo Supabase Auth
+  email        String          @unique
+  idPerfil     String          @map("id_perfil") @db.Uuid
+  vinculo      Vinculo
+  situacao     SituacaoUsuario @default(Ativo)
+  ultimoAcesso DateTime?       @map("ultimo_acesso")
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
+
+  perfil               Perfil                @relation(fields: [idPerfil], references: [id])
+  aluno                Aluno?
+  professor            Professor?
+  cursosCoordenados    Curso[]               @relation("CursoCoordenador")
+  turmasCoordenadas    Turma[]               @relation("TurmaCoordenador")
+  comunicadosAutor     Comunicado[]          @relation("ComunicadoAutor")
+  comunicadoLeituras   ComunicadoLeitura[]
+  mensagensEnviadas    MensagemSolicitacao[] @relation("MsgRemetente")
+  mensagensRecebidas   MensagemSolicitacao[] @relation("MsgDestinatario")
+  logs                 LogAuditoria[]
+  consentimentos       Consentimento[]
+
+  @@index([idPerfil])
+  @@map("usuario")
+}
+
+model Perfil {
+  id        String  @id @default(uuid()) @db.Uuid
+  nome      String  @unique
+  descricao String?
+
+  usuarios   Usuario[]
+  permissoes PerfilPermissao[]
+
+  @@map("perfil")
+}
+
+model PerfilPermissao {
+  idPerfil  String @map("id_perfil") @db.Uuid
+  permissao String
+
+  perfil Perfil @relation(fields: [idPerfil], references: [id], onDelete: Cascade)
+
+  @@id([idPerfil, permissao])
+  @@map("perfil_permissao")
+}
+
+// ----------------------------------------------------------------------------
+// CURSO / ESTRUTURA ACADÊMICA
+// ----------------------------------------------------------------------------
+model Curso {
+  id                  String          @id @default(uuid()) @db.Uuid
+  nome                String
+  tipo                TipoCurso
+  areaConhecimento    String?         @map("area_conhecimento")
+  cargaHoraria        Int             @map("carga_horaria")
+  duracaoMeses        Int?            @map("duracao_meses")
+  valorInvestimento   Decimal?        @map("valor_investimento") @db.Decimal(10, 2)
+  formaPagamento      String?         @map("forma_pagamento")
+  objetivos           String?
+  modalidade          ModalidadeCurso
+  metodologia         String?
+  requisitosConclusao String?         @map("requisitos_conclusao")
+  idCoordenador       String?         @map("id_coordenador") @db.Uuid
+  situacao            SituacaoCurso   @default(Ativo)
+  criadoEm            DateTime        @default(now()) @map("criado_em")
+  atualizadoEm        DateTime        @updatedAt @map("atualizado_em")
+
+  coordenador  Usuario?          @relation("CursoCoordenador", fields: [idCoordenador], references: [id])
+  turmas       Turma[]
+  modulos      ModuloEixo[]
+  grades       GradeCurricular[]
+  matriculas   Matricula[]
+  certificados Certificado[]
+  planos       PlanoPagamento[]
+
+  @@index([idCoordenador])
+  @@map("curso")
+}
+
+model Turma {
+  id            String        @id @default(uuid()) @db.Uuid
+  idCurso       String        @map("id_curso") @db.Uuid
+  nome          String
+  anoPeriodo    String        @map("ano_periodo")
+  dataInicio    DateTime?     @map("data_inicio") @db.Date
+  dataTermino   DateTime?     @map("data_termino") @db.Date
+  idCoordenador String?       @map("id_coordenador") @db.Uuid
+  situacao      SituacaoTurma @default(EmFormacao)
+  criadoEm      DateTime      @default(now()) @map("criado_em")
+
+  curso       Curso        @relation(fields: [idCurso], references: [id], onDelete: Cascade)
+  coordenador Usuario?     @relation("TurmaCoordenador", fields: [idCoordenador], references: [id])
+  matriculas  Matricula[]
+  eventos     Evento[]
+  comunicados Comunicado[]
+  frequencias Frequencia[]
+  avaliacoes  Avaliacao[]
+
+  @@index([idCurso])
+  @@map("turma")
+}
+
+model ModuloEixo {
+  id           String  @id @default(uuid()) @db.Uuid
+  idCurso      String  @map("id_curso") @db.Uuid
+  nome         String
+  ordem        Int     @default(1)
+  cargaHoraria Int?    @map("carga_horaria")
+  descricao    String?
+
+  curso       Curso        @relation(fields: [idCurso], references: [id], onDelete: Cascade)
+  disciplinas Disciplina[]
+
+  @@index([idCurso])
+  @@map("modulo_eixo")
+}
+
+model GradeCurricular {
+  id                 String      @id @default(uuid()) @db.Uuid
+  idCurso            String      @map("id_curso") @db.Uuid
+  versao             Int         @default(1)
+  cargaHorariaTotal  Int         @default(0) @map("carga_horaria_total")
+  status             StatusGrade @default(EmElaboracao)
+  dataValidacao      DateTime?   @map("data_validacao")
+  criadoEm           DateTime    @default(now()) @map("criado_em")
+
+  curso       Curso             @relation(fields: [idCurso], references: [id], onDelete: Cascade)
+  disciplinas GradeDisciplina[]
+
+  @@unique([idCurso, versao])
+  @@map("grade_curricular")
+}
+
+model GradeDisciplina {
+  idGrade      String  @map("id_grade") @db.Uuid
+  idDisciplina String  @map("id_disciplina") @db.Uuid
+  periodo      Int?
+  preRequisito String? @map("pre_requisito")
+
+  grade      GradeCurricular @relation(fields: [idGrade], references: [id], onDelete: Cascade)
+  disciplina Disciplina      @relation(fields: [idDisciplina], references: [id], onDelete: Cascade)
+
+  @@id([idGrade, idDisciplina])
+  @@map("grade_disciplina")
+}
+
+// ----------------------------------------------------------------------------
+// PESSOAS
+// ----------------------------------------------------------------------------
+model Professor {
+  id           String            @id @default(uuid()) @db.Uuid
+  idUsuario    String?           @unique @map("id_usuario") @db.Uuid
+  nome         String
+  cpf          String?           @unique
+  email        String?
+  telefone     String?
+  titulacao    String?
+  areaAtuacao  String?           @map("area_atuacao")
+  miniCurriculo String?          @map("mini_curriculo")
+  fotoUrl      String?           @map("foto_url")
+  lattes       String?
+  situacao     SituacaoProfessor @default(Ativo)
+
+  usuario     Usuario?     @relation(fields: [idUsuario], references: [id])
+  disciplinas Disciplina[]
+  avaliacoes  Avaliacao[]
+
+  @@map("professor")
+}
+
+model Aluno {
+  id               String            @id @default(uuid()) @db.Uuid
+  idUsuario        String            @unique @map("id_usuario") @db.Uuid
+  nome             String
+  cpf              String?           @unique
+  rg               String?
+  dataNascimento   DateTime?         @map("data_nascimento") @db.Date
+  email            String?
+  telefone         String?
+  endereco         String?
+  situacaoAcademica SituacaoAcademica @default(Ativo) @map("situacao_academica")
+
+  usuario      Usuario          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+  matriculas   Matricula[]
+  frequencias  Frequencia[]
+  avaliacoes   Avaliacao[]
+  certificados Certificado[]
+  planos       PlanoPagamento[]
+
+  @@map("aluno")
+}
+
+model Matricula {
+  id                  String            @id @default(uuid()) @db.Uuid
+  protocolo           String            @unique
+  idAluno             String            @map("id_aluno") @db.Uuid
+  idCurso             String            @map("id_curso") @db.Uuid
+  idTurma             String?           @map("id_turma") @db.Uuid
+  filiacao            String?
+  nacionalidade       String?
+  estadoCivil         String?           @map("estado_civil")
+  formacaoGraduacao   String?           @map("formacao_graduacao")
+  instituicaoAnterior String?           @map("instituicao_anterior")
+  anoConclusao        Int?              @map("ano_conclusao")
+  numeroDiploma       String?           @map("numero_diploma")
+  documentosAnexos    Json?             @map("documentos_anexos")
+  contratoAceito      Boolean           @default(false) @map("contrato_aceito")
+  dataAceite          DateTime?         @map("data_aceite")
+  idConsentimento     String?           @map("id_consentimento") @db.Uuid
+  situacao            SituacaoMatricula @default(PreMatricula)
+  dataMatricula       DateTime          @default(now()) @map("data_matricula")
+
+  aluno         Aluno            @relation(fields: [idAluno], references: [id], onDelete: Cascade)
+  curso         Curso            @relation(fields: [idCurso], references: [id])
+  turma         Turma?           @relation(fields: [idTurma], references: [id])
+  consentimento Consentimento?   @relation(fields: [idConsentimento], references: [id])
+  planos        PlanoPagamento[]
+
+  @@index([idAluno])
+  @@index([idCurso])
+  @@map("matricula")
+}
+
+// ----------------------------------------------------------------------------
+// DISCIPLINAS / CONTEÚDO
+// ----------------------------------------------------------------------------
+model Disciplina {
+  id                    String           @id @default(uuid()) @db.Uuid
+  idModulo              String?          @map("id_modulo") @db.Uuid
+  codigo                String?
+  nome                  String
+  ementa                String?
+  objetivos             String?
+  conteudoProgramatico  String?          @map("conteudo_programatico")
+  cargaHoraria          Int              @map("carga_horaria")
+  idProfessor           String?          @map("id_professor") @db.Uuid
+  atividadesAvaliativas String?          @map("atividades_avaliativas")
+  datasImportantes      String?          @map("datas_importantes")
+  status                StatusDisciplina @default(Programada)
+
+  modulo      ModuloEixo?         @relation(fields: [idModulo], references: [id])
+  professor   Professor?          @relation(fields: [idProfessor], references: [id])
+  materiais   MaterialBiblioteca[]
+  eventos     Evento[]
+  frequencias Frequencia[]
+  avaliacoes  Avaliacao[]
+  mensagens   MensagemSolicitacao[]
+  grades      GradeDisciplina[]
+
+  @@index([idModulo])
+  @@index([idProfessor])
+  @@map("disciplina")
+}
+
+model MaterialBiblioteca {
+  id           String       @id @default(uuid()) @db.Uuid
+  titulo       String
+  tipo         TipoMaterial
+  autor        String?
+  categoria    String?
+  idDisciplina String?      @map("id_disciplina") @db.Uuid
+  arquivoUrl   String?      @map("arquivo_url")
+  bibliografia Bibliografia?
+  nivelAcesso  NivelAcesso  @default(Restrito) @map("nivel_acesso")
+  dataInclusao DateTime     @default(now()) @map("data_inclusao")
+
+  disciplina Disciplina? @relation(fields: [idDisciplina], references: [id])
+
+  @@index([idDisciplina])
+  @@map("material_biblioteca")
+}
+
+// ----------------------------------------------------------------------------
+// CALENDÁRIO / COMUNICAÇÃO
+// ----------------------------------------------------------------------------
+model Evento {
+  id           String           @id @default(uuid()) @db.Uuid
+  titulo       String
+  tipo         TipoEvento
+  dataInicio   DateTime         @map("data_inicio")
+  dataFim      DateTime?        @map("data_fim")
+  modalidade   ModalidadeEvento @default(Presencial)
+  idTurma      String?          @map("id_turma") @db.Uuid
+  idDisciplina String?          @map("id_disciplina") @db.Uuid
+  descricao    String?
+  notificar    Boolean          @default(false)
+
+  turma      Turma?      @relation(fields: [idTurma], references: [id])
+  disciplina Disciplina? @relation(fields: [idDisciplina], references: [id])
+
+  @@index([idTurma])
+  @@map("evento")
+}
+
+model Comunicado {
+  id             String             @id @default(uuid()) @db.Uuid
+  titulo         String
+  conteudo       String
+  publicoAlvo    PublicoAlvo        @default(Todos) @map("publico_alvo")
+  idTurma        String?            @map("id_turma") @db.Uuid
+  urgencia       Urgencia           @default(Normal)
+  dataPublicacao DateTime           @default(now()) @map("data_publicacao")
+  idAutor        String             @map("id_autor") @db.Uuid
+  anexos         Json?
+  situacao       SituacaoComunicado @default(Publicado)
+
+  turma   Turma?              @relation(fields: [idTurma], references: [id])
+  autor   Usuario             @relation("ComunicadoAutor", fields: [idAutor], references: [id])
+  leituras ComunicadoLeitura[]
+
+  @@index([idTurma])
+  @@map("comunicado")
+}
+
+model ComunicadoLeitura {
+  idComunicado String    @map("id_comunicado") @db.Uuid
+  idUsuario    String    @map("id_usuario") @db.Uuid
+  lido         Boolean   @default(false)
+  dataLeitura  DateTime? @map("data_leitura")
+
+  comunicado Comunicado @relation(fields: [idComunicado], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@id([idComunicado, idUsuario])
+  @@map("comunicado_leitura")
+}
+
+// ----------------------------------------------------------------------------
+// AVALIAÇÃO / FREQUÊNCIA
+// ----------------------------------------------------------------------------
+model Frequencia {
+  id                  String             @id @default(uuid()) @db.Uuid
+  idAluno             String             @map("id_aluno") @db.Uuid
+  idDisciplina        String             @map("id_disciplina") @db.Uuid
+  idTurma             String?            @map("id_turma") @db.Uuid
+  dataAula            DateTime           @map("data_aula") @db.Date
+  tipoEncontro        TipoEncontro       @default(Presencial) @map("tipo_encontro")
+  situacao            SituacaoFrequencia @default(Presente)
+  justificativa       String?
+  percentualAcumulado Decimal?           @map("percentual_acumulado") @db.Decimal(5, 2)
+
+  aluno      Aluno      @relation(fields: [idAluno], references: [id], onDelete: Cascade)
+  disciplina Disciplina @relation(fields: [idDisciplina], references: [id], onDelete: Cascade)
+  turma      Turma?     @relation(fields: [idTurma], references: [id])
+
+  @@index([idAluno])
+  @@index([idDisciplina])
+  @@map("frequencia")
+}
+
+model Avaliacao {
+  id                   String            @id @default(uuid()) @db.Uuid
+  idAluno              String?           @map("id_aluno") @db.Uuid
+  idDisciplina         String?           @map("id_disciplina") @db.Uuid
+  idTurma              String?           @map("id_turma") @db.Uuid
+  idProfessor          String?           @map("id_professor") @db.Uuid
+  tipo                 TipoAvaliacao
+  dataAplicacao        DateTime?         @map("data_aplicacao")
+  nota                 Decimal?          @db.Decimal(4, 2)
+  respostasQuestionario Json?            @map("respostas_questionario")
+  formaColeta          FormaColeta       @default(Identificada) @map("forma_coleta")
+  percentualFrequencia Decimal?          @map("percentual_frequencia") @db.Decimal(5, 2)
+  situacao             SituacaoAvaliacao?
+
+  aluno      Aluno?      @relation(fields: [idAluno], references: [id])
+  disciplina Disciplina? @relation(fields: [idDisciplina], references: [id])
+  turma      Turma?      @relation(fields: [idTurma], references: [id])
+  professor  Professor?  @relation(fields: [idProfessor], references: [id])
+
+  @@index([idAluno])
+  @@index([idDisciplina])
+  @@map("avaliacao")
+}
+
+// ----------------------------------------------------------------------------
+// CERTIFICADOS
+// ----------------------------------------------------------------------------
+model ModeloCertificado {
+  id          String                    @id @default(uuid()) @db.Uuid
+  nome        String
+  tipo        TipoCertificado
+  layout      String?
+  textoPadrao String?                   @map("texto_padrao")
+  requisitos  String?
+  situacao    SituacaoModeloCertificado @default(Ativo)
+
+  certificados Certificado[]
+
+  @@map("modelo_certificado")
+}
+
+model Certificado {
+  id                 String              @id @default(uuid()) @db.Uuid
+  idAluno            String              @map("id_aluno") @db.Uuid
+  idCurso            String              @map("id_curso") @db.Uuid
+  idModelo           String?             @map("id_modelo") @db.Uuid
+  cargaHoraria       Int?                @map("carga_horaria")
+  dataEmissao        DateTime            @default(now()) @map("data_emissao")
+  tipo               TipoCertificado
+  codigoAutenticacao String              @unique @map("codigo_autenticacao")
+  arquivoPdf         String?             @map("arquivo_pdf")
+  situacao           SituacaoCertificado @default(Emitido)
+
+  aluno  Aluno              @relation(fields: [idAluno], references: [id], onDelete: Cascade)
+  curso  Curso              @relation(fields: [idCurso], references: [id])
+  modelo ModeloCertificado? @relation(fields: [idModelo], references: [id])
+
+  @@index([idAluno])
+  @@map("certificado")
+}
+
+// ----------------------------------------------------------------------------
+// FINANCEIRO
+// ----------------------------------------------------------------------------
+model PlanoPagamento {
+  id           String        @id @default(uuid()) @db.Uuid
+  idMatricula  String        @map("id_matricula") @db.Uuid
+  idAluno      String        @map("id_aluno") @db.Uuid
+  idCurso      String        @map("id_curso") @db.Uuid
+  valorTotal   Decimal       @map("valor_total") @db.Decimal(10, 2)
+  numParcelas  Int           @default(1) @map("num_parcelas")
+  descontos    Decimal       @default(0) @db.Decimal(10, 2)
+  saldoDevedor Decimal       @map("saldo_devedor") @db.Decimal(10, 2)
+  situacao     SituacaoPlano @default(Adimplente)
+
+  matricula Matricula @relation(fields: [idMatricula], references: [id], onDelete: Cascade)
+  aluno     Aluno     @relation(fields: [idAluno], references: [id])
+  curso     Curso     @relation(fields: [idCurso], references: [id])
+  parcelas  Parcela[]
+
+  @@index([idAluno])
+  @@map("plano_pagamento")
+}
+
+model Parcela {
+  id             String          @id @default(uuid()) @db.Uuid
+  idPlano        String          @map("id_plano") @db.Uuid
+  numero         Int
+  valor          Decimal         @db.Decimal(10, 2)
+  vencimento     DateTime        @db.Date
+  dataPagamento  DateTime?       @map("data_pagamento")
+  formaPagamento String?         @map("forma_pagamento")
+  comprovante    String?
+  situacao       SituacaoParcela @default(EmAberto)
+
+  plano PlanoPagamento @relation(fields: [idPlano], references: [id], onDelete: Cascade)
+
+  @@index([idPlano])
+  @@map("parcela")
+}
+
+// ----------------------------------------------------------------------------
+// ATENDIMENTO / LGPD / LOGS
+// ----------------------------------------------------------------------------
+model MensagemSolicitacao {
+  id             String         @id @default(uuid()) @db.Uuid
+  idRemetente    String         @map("id_remetente") @db.Uuid
+  idDestinatario String         @map("id_destinatario") @db.Uuid
+  idDisciplina   String?        @map("id_disciplina") @db.Uuid
+  tipo           TipoMensagem   @default(Mensagem)
+  assunto        String?
+  conteudo       String
+  dataEnvio      DateTime       @default(now()) @map("data_envio")
+  resposta       String?
+  status         StatusMensagem @default(Aberta)
+
+  remetente    Usuario     @relation("MsgRemetente", fields: [idRemetente], references: [id])
+  destinatario Usuario     @relation("MsgDestinatario", fields: [idDestinatario], references: [id])
+  disciplina   Disciplina? @relation(fields: [idDisciplina], references: [id])
+
+  @@index([idDestinatario])
+  @@map("mensagem_solicitacao")
+}
+
+model LogAuditoria {
+  id        String   @id @default(uuid()) @db.Uuid
+  idUsuario String?  @map("id_usuario") @db.Uuid
+  perfil    String?
+  acao      String
+  modulo    String?
+  dataHora  DateTime @default(now()) @map("data_hora")
+  ip        String?
+  resultado String?
+
+  usuario Usuario? @relation(fields: [idUsuario], references: [id])
+
+  @@index([idUsuario])
+  @@index([dataHora])
+  @@map("log_auditoria")
+}
+
+model Consentimento {
+  id              String                @id @default(uuid()) @db.Uuid
+  idTitular       String                @map("id_titular") @db.Uuid
+  finalidade      String
+  dataConsentimento DateTime            @default(now()) @map("data_consentimento")
+  versaoPolitica  String                @map("versao_politica")
+  canalColeta     String?               @map("canal_coleta")
+  situacao        SituacaoConsentimento @default(Ativo)
+  dataRevogacao   DateTime?             @map("data_revogacao")
+
+  titular    Usuario     @relation(fields: [idTitular], references: [id], onDelete: Cascade)
+  matriculas Matricula[]
+
+  @@index([idTitular])
+  @@map("consentimento")
+}
