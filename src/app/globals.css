@@ -1,26 +1,124 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-link: var(--link);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ============================================================
+   Tokens da marca Lectiva Edu (modo claro)
+   Paleta oficial do brand book.
+   ============================================================ */
+:root {
+  --radius: 0.625rem;
+
+  /* Cores cruas da marca */
+  --brand-blue: #003b73; /* azul institucional (primária)  */
+  --brand-blue-deep: #00264a; /* azul profundo (texto/headers)  */
+  --brand-blue-tech: #0067b1; /* azul tecnológico (links/ações) */
+  --brand-green: #43a047; /* verde validação (sucesso/CTA)  */
+  --brand-green-safe: #1b7f2a; /* verde segurança (confirmações) */
+  --brand-bg: #f7fafc; /* fundo claro                    */
+
+  /* Mapeamento para os tokens do design system */
+  --background: var(--brand-bg);
+  --foreground: var(--brand-blue-deep);
+  --card: #ffffff;
+  --card-foreground: var(--brand-blue-deep);
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-blue-deep);
+  --primary: var(--brand-blue);
+  --primary-foreground: #ffffff;
+  --secondary: #e6eef5;
+  --secondary-foreground: var(--brand-blue-deep);
+  --muted: #eef2f6;
+  --muted-foreground: #51657a;
+  --accent: #e1eaf3;
+  --accent-foreground: var(--brand-blue);
+  --link: var(--brand-blue-tech);
+  --success: var(--brand-green);
+  --success-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: #d8e1ea;
+  --input: #d8e1ea;
+  --ring: var(--brand-blue-tech);
+  --chart-1: var(--brand-blue);
+  --chart-2: var(--brand-blue-tech);
+  --chart-3: var(--brand-green);
+  --chart-4: var(--brand-green-safe);
+  --chart-5: #6baed6;
+  --sidebar: var(--brand-blue-deep);
+  --sidebar-foreground: #e6eef5;
+  --sidebar-primary: var(--brand-blue-tech);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--brand-blue);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: var(--brand-blue-tech);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
 }
