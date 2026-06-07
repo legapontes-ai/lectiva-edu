@@ -9,6 +9,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { entrar } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
@@ -58,9 +59,8 @@ export function LoginForm() {
             Esqueceu a senha?
           </Link>
         </div>
-        <Input
+        <PasswordInput
           id="senha"
-          type="password"
           autoComplete="current-password"
           aria-invalid={!!errors.senha}
           {...register("senha")}

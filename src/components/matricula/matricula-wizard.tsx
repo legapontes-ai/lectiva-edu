@@ -26,6 +26,7 @@ import { TIPO_CURSO, MODALIDADE_CURSO, rotulo } from "@/lib/enums";
 import { Field } from "@/components/painel/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -282,7 +283,7 @@ export function MatriculaWizard({
                   error={errors.senha?.message}
                   hint="Mín. 8 caracteres, com letra e número."
                 >
-                  <Input id="senha" type="password" autoComplete="new-password" {...register("senha")} aria-invalid={!!errors.senha} />
+                  <PasswordInput id="senha" autoComplete="new-password" {...register("senha")} aria-invalid={!!errors.senha} />
                 </Field>
               </div>
 

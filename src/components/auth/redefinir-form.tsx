@@ -9,7 +9,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { novaSenhaSchema, type NovaSenhaInput } from "@/lib/validations/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function RedefinirForm() {
@@ -78,12 +78,12 @@ export function RedefinirForm() {
       )}
       <div className="space-y-1.5">
         <Label htmlFor="senha">Nova senha</Label>
-        <Input id="senha" type="password" autoComplete="new-password" {...register("senha")} />
+        <PasswordInput id="senha" autoComplete="new-password" {...register("senha")} />
         {errors.senha && <p className="text-xs text-destructive">{errors.senha.message}</p>}
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="confirmar">Confirmar nova senha</Label>
-        <Input id="confirmar" type="password" autoComplete="new-password" {...register("confirmar")} />
+        <PasswordInput id="confirmar" autoComplete="new-password" {...register("confirmar")} />
         {errors.confirmar && <p className="text-xs text-destructive">{errors.confirmar.message}</p>}
       </div>
       <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
