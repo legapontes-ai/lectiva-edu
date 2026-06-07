@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { registrarLog } from "@/lib/audit";
 import { PERFIS } from "@/lib/auth/permissions";
@@ -71,6 +72,23 @@ export async function criarMatricula(
   const parsed = matriculaSchema.safeParse(input);
   if (!parsed.success) return { erro: "Dados inválidos. Revise as informações e tente novamente." };
   const d = parsed.data;
+
+  // Rate-limit básico por IP: mitiga abuso de criação de contas no fluxo público.
+  try {
+    const h = await headers();
+    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
+    if (ip) {
+      const umaHoraAtras = new Date(Date.now() - 60 * 60 * 1000);
+      const recentes = await prisma.logAuditoria.count({
+        where: { acao: "MATRICULA_CRIADA", ip, dataHora: { gte: umaHoraAtras } },
+      });
+      if (recentes >= 5) {
+        return { erro: "Muitas matrículas a partir deste dispositivo. Tente novamente mais tarde." };
+      }
+    }
+  } catch {
+    // sem contexto de request: segue sem rate-limit
+  }
 
   const curso = await prisma.curso.findUnique({ where: { id: idCurso } });
   if (!curso) return { erro: "Curso não encontrado." };
