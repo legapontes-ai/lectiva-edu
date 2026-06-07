@@ -10,6 +10,7 @@ import { criarUsuario } from "@/lib/usuarios/actions";
 import { Field } from "@/components/painel/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Select } from "@/components/ui/select";
 
 export function NovoUsuarioForm({ perfis }: { perfis: { id: string; nome: string }[] }) {
@@ -53,7 +54,7 @@ export function NovoUsuarioForm({ perfis }: { perfis: { id: string; nome: string
         </Field>
       </div>
       <Field label="Senha provisória" htmlFor="senha" error={errors.senha?.message} hint="Mínimo 8 caracteres, com letra e número. O usuário pode redefini-la depois.">
-        <Input id="senha" type="text" autoComplete="off" {...register("senha")} />
+        <PasswordInput id="senha" autoComplete="off" {...register("senha")} />
       </Field>
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>

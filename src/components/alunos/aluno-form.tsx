@@ -11,6 +11,7 @@ import { SITUACAO_ACADEMICA } from "@/lib/enums";
 import { Field } from "@/components/painel/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -72,7 +73,7 @@ export function AlunoForm({ aluno }: { aluno?: AlunoFormValues }) {
             <Input id="email" type="email" {...register("email")} />
           </Field>
           <Field label="Senha provisória" htmlFor="senha" error={errors.senha?.message} hint="Mín. 8 caracteres, com letra e número.">
-            <Input id="senha" type="text" autoComplete="off" {...register("senha")} />
+            <PasswordInput id="senha" autoComplete="off" {...register("senha")} />
           </Field>
         </div>
       )}
