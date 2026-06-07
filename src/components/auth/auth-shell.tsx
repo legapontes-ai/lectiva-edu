@@ -23,9 +23,14 @@ export function AuthShell({
         </CardHeader>
         <CardContent>{children}</CardContent>
       </Card>
-      <p className="mt-6 text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Lectiva Edu
-      </p>
+      <div className="mt-6 flex flex-col items-center gap-1 text-xs text-muted-foreground">
+        <nav className="flex gap-3">
+          <Link href="/politica-de-privacidade" className="hover:text-link">Privacidade</Link>
+          <span aria-hidden>·</span>
+          <Link href="/termos-de-uso" className="hover:text-link">Termos de Uso</Link>
+        </nav>
+        <p>© {new Date().getFullYear()} Lectiva Edu</p>
+      </div>
     </main>
   );
 }

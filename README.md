@@ -185,9 +185,10 @@ Backups: habilitar Point-in-Time Recovery / backups diários no painel do Supaba
 ## Conformidade LGPD — checklist
 
 - [x] Registro de **consentimento** por titular (`Consentimento`) com finalidade, versão da política e canal de coleta.
-- [ ] Revogação de consentimento pelo titular (Fase 1).
-- [ ] Política de privacidade e termo de uso publicados (Fase 1).
-- [x] **Trilha de auditoria** de ações críticas (`LogAuditoria`).
+- [x] Revogação/reativação de consentimento (painel LGPD, `lgpd.gerenciar`).
+- [x] Política de privacidade e termo de uso publicados (`/politica-de-privacidade`, `/termos-de-uso`).
+- [x] **MFA (TOTP)** disponível para as contas (recomendado a administradores) em `/painel/seguranca`.
+- [x] **Trilha de auditoria** de ações críticas (`LogAuditoria`), com visualização no painel.
 - [x] Segredos apenas em variáveis de ambiente (`.env` fora do versionamento; `.env.example` versionado).
 - [ ] Controle de acesso a documentos no Storage (buckets privados + URLs assinadas) (Fase 2+).
 - [x] Minimização: dados sensíveis acessíveis somente aos perfis autorizados (RBAC server-side).

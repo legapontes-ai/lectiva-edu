@@ -10,6 +10,8 @@ import {
   CalendarRange,
   UserCog,
   ScrollText,
+  ShieldCheck,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,8 @@ const ICONS: Record<string, LucideIcon> = {
   student: Users,
   teacher: GraduationCap,
   audit: ScrollText,
+  lgpd: ShieldCheck,
+  security: Lock,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {

@@ -18,5 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/painel/alunos", label: "Alunos", icon: "student", permissao: "alunos.ver" },
   { href: "/painel/professores", label: "Docentes", icon: "teacher", permissao: "professores.ver" },
   { href: "/painel/usuarios", label: "Usuários", icon: "users", permissao: "usuarios.gerenciar" },
+  { href: "/painel/consentimentos", label: "Consentimentos", icon: "lgpd", permissao: "lgpd.gerenciar" },
   { href: "/painel/auditoria", label: "Auditoria", icon: "audit", permissao: "logs.ver" },
+  { href: "/painel/seguranca", label: "Segurança (MFA)", icon: "security", permissao: "dashboard.ver" },
 ];
