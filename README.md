@@ -190,18 +190,32 @@ Backups: habilitar Point-in-Time Recovery / backups diários no painel do Supaba
 - [x] **MFA (TOTP)** disponível para as contas (recomendado a administradores) em `/painel/seguranca`.
 - [x] **Trilha de auditoria** de ações críticas (`LogAuditoria`), com visualização no painel.
 - [x] Segredos apenas em variáveis de ambiente (`.env` fora do versionamento; `.env.example` versionado).
-- [ ] Controle de acesso a documentos no Storage (buckets privados + URLs assinadas) (Fase 2+).
+- [x] Controle de acesso a documentos no Storage (buckets **privados** + **URLs assinadas** em biblioteca/certificados).
 - [x] Minimização: dados sensíveis acessíveis somente aos perfis autorizados (RBAC server-side).
+- [x] Cabeçalhos de segurança (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy).
 
 > O checklist evolui a cada fase; itens marcados já estão implementados na base.
 
 ---
 
-## Roadmap por fases
+## Testes
+
+```bash
+npm test          # Vitest (unit) — 61 testes (RBAC, gateway, formatação, validações Zod)
+npm run e2e       # Playwright (E2E) — requer: npx playwright install chromium
+```
+
+E2E (Playwright) cobre os fluxos críticos em `e2e/`: **login**, **validação de certificado** e
+**matrícula** (ativos); **baixa de parcela** e **emissão de certificado** estão como esqueleto
+(`test.fixme`, mutam dados — rodar contra banco de teste). Veja `e2e/README.md`.
+
+---
+
+## Roadmap por fases — todas concluídas ✅
 
 - **Fase 0 — Setup** ✅ scaffolding, tema/tokens, Prisma+Supabase, migration+seed, CI, deploy.
-- **Fase 1 — Núcleo** Segurança/Permissões, LGPD/Logs, cadastros base, painel admin básico.
-- **Fase 2 — Ingresso** Home, Cursos, Corpo Docente, Matrícula, Área do Aluno básica.
-- **Fase 3 — Acadêmico** Disciplinas, Grade, Biblioteca, Calendário, Comunicados, Avaliação/Frequência.
-- **Fase 4 — Financeiro & Certificação** Pagamentos, certificados em PDF + validação pública.
-- **Fase 5 — Gestão & qualidade** Dashboards, relatórios, testes E2E, hardening.
+- **Fase 1 — Núcleo** ✅ Segurança/Permissões (auth, sessão, MFA), LGPD/Logs, cadastros base, painel admin.
+- **Fase 2 — Ingresso** ✅ Home, Cursos, Corpo Docente, Matrícula, Área do Aluno.
+- **Fase 3 — Acadêmico** ✅ Disciplinas, Grade, Biblioteca, Calendário, Comunicados, Avaliação/Frequência.
+- **Fase 4 — Financeiro & Certificação** ✅ Pagamentos (gateway adapter), certificados em PDF + validação pública.
+- **Fase 5 — Gestão & qualidade** ✅ Dashboards, relatórios, testes (Vitest+Playwright), hardening de segurança.

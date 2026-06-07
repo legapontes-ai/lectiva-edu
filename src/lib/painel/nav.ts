@@ -13,6 +13,7 @@ export type NavItem = {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/painel", label: "Visão geral", icon: "dashboard", permissao: "dashboard.ver" },
+  { href: "/painel/relatorios", label: "Relatórios", icon: "report", permissao: "relatorios.ver" },
   // Estrutura acadêmica
   { href: "/painel/cursos", label: "Cursos", icon: "course", permissao: "cursos.ver" },
   { href: "/painel/turmas", label: "Turmas", icon: "class", permissao: "turmas.gerenciar" },

@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Wallet,
   Award,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ const ICONS: Record<string, LucideIcon> = {
   assessment: ClipboardList,
   finance: Wallet,
   certificate: Award,
+  report: BarChart3,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {
