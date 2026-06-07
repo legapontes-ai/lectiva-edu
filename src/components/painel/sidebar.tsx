@@ -22,6 +22,8 @@ import {
   Wallet,
   Award,
   BarChart3,
+  UserPlus,
+  SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,8 @@ const ICONS: Record<string, LucideIcon> = {
   finance: Wallet,
   certificate: Award,
   report: BarChart3,
+  signup: UserPlus,
+  params: SlidersHorizontal,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {

@@ -34,6 +34,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/painel/professores", label: "Docentes", icon: "teacher", permissao: "professores.ver" },
   // Administração e segurança
   { href: "/painel/usuarios", label: "Usuários", icon: "users", permissao: "usuarios.gerenciar" },
+  { href: "/painel/autocadastros", label: "Autocadastros", icon: "signup", permissao: "autocadastro.gerenciar" },
+  { href: "/painel/parametros", label: "Parâmetros", icon: "params", permissao: "parametros.gerenciar" },
   { href: "/painel/consentimentos", label: "Consentimentos", icon: "lgpd", permissao: "lgpd.gerenciar" },
   { href: "/painel/auditoria", label: "Auditoria", icon: "audit", permissao: "logs.ver" },
   { href: "/painel/seguranca", label: "Segurança (MFA)", icon: "security", permissao: "dashboard.ver" },

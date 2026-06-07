@@ -72,6 +72,13 @@ export function LoginForm() {
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
         Entrar
       </Button>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Não tem conta?{" "}
+        <Link href="/autocadastro" className="font-medium text-link hover:underline">
+          Criar acesso
+        </Link>
+      </p>
     </form>
   );
 }

@@ -232,6 +232,10 @@ model Usuario {
   vinculo      Vinculo
   situacao     SituacaoUsuario @default(Ativo)
   ultimoAcesso DateTime?       @map("ultimo_acesso")
+  // v1.1 — autocadastro / senha temporária
+  senhaProvisoria Boolean   @default(false) @map("senha_provisoria")
+  senhaExpiraEm   DateTime? @map("senha_expira_em")
+  deveTrocarSenha Boolean   @default(false) @map("deve_trocar_senha")
   criadoEm     DateTime        @default(now()) @map("criado_em")
   atualizadoEm DateTime        @updatedAt @map("atualizado_em")
 
@@ -246,6 +250,8 @@ model Usuario {
   mensagensRecebidas   MensagemSolicitacao[] @relation("MsgDestinatario")
   logs                 LogAuditoria[]
   consentimentos       Consentimento[]
+  autocadastro           Autocadastro?  @relation("AutocadastroUsuario")
+  autocadastrosRevisados Autocadastro[] @relation("AutocadastroRevisor")
 
   @@index([idPerfil])
   @@map("usuario")
@@ -256,8 +262,10 @@ model Perfil {
   nome      String  @unique
   descricao String?
 
-  usuarios   Usuario[]
-  permissoes PerfilPermissao[]
+  usuarios      Usuario[]
+  permissoes    PerfilPermissao[]
+  autocadastros Autocadastro[]
+  politicaSenha PoliticaSenhaTemporaria?
 
   @@map("perfil")
 }
@@ -732,4 +740,50 @@ model Consentimento {
 
   @@index([idTitular])
   @@map("consentimento")
+}
+
+// ----------------------------------------------------------------------------
+// v1.1 — AUTOCADASTRO (5.13)
+// ----------------------------------------------------------------------------
+enum SituacaoAutocadastro {
+  Pendente
+  Aprovado
+  Rejeitado
+  Expirado
+}
+
+/** Prazo de validade da senha temporária, configurável por perfil. */
+model PoliticaSenhaTemporaria {
+  idPerfil      String   @id @map("id_perfil") @db.Uuid
+  diasValidade  Int      @default(7) @map("dias_validade")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  perfil Perfil @relation(fields: [idPerfil], references: [id], onDelete: Cascade)
+
+  @@map("politica_senha_temporaria")
+}
+
+/** Solicitação de autocadastro (fila de aprovação). */
+model Autocadastro {
+  id            String               @id @default(uuid()) @db.Uuid
+  nome          String
+  email         String
+  cpf           String?
+  telefone      String?
+  idPerfil      String               @map("id_perfil") @db.Uuid
+  status        SituacaoAutocadastro @default(Pendente)
+  idUsuario     String?              @unique @map("id_usuario") @db.Uuid
+  senhaExpiraEm DateTime?            @map("senha_expira_em")
+  motivoRejeicao String?             @map("motivo_rejeicao")
+  revisadoPor   String?              @map("revisado_por") @db.Uuid
+  dataRevisao   DateTime?            @map("data_revisao")
+  criadoEm      DateTime             @default(now()) @map("criado_em")
+
+  perfil  Perfil   @relation(fields: [idPerfil], references: [id])
+  usuario Usuario? @relation("AutocadastroUsuario", fields: [idUsuario], references: [id])
+  revisor Usuario? @relation("AutocadastroRevisor", fields: [revisadoPor], references: [id])
+
+  @@index([status])
+  @@index([email])
+  @@map("autocadastro")
 }

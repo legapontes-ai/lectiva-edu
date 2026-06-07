@@ -36,6 +36,18 @@ export async function entrar(input: { email: string; senha: string }): Promise<A
     return { erro: "Acesso indisponível. Procure a administração." };
   }
 
+  // Senha temporária expirada: bloqueia até liberação/regeneração pela administração.
+  if (usuario.senhaProvisoria && usuario.senhaExpiraEm && usuario.senhaExpiraEm < new Date()) {
+    await supabase.auth.signOut();
+    await registrarLog({
+      idUsuario: usuario.id,
+      acao: "LOGIN_SENHA_EXPIRADA",
+      modulo: "Seguranca",
+      resultado: "Bloqueado",
+    });
+    return { erro: "Sua senha temporária expirou. Procure a administração para liberar um novo acesso." };
+  }
+
   await prisma.usuario.update({ where: { id: usuario.id }, data: { ultimoAcesso: new Date() } });
   await registrarLog({
     idUsuario: usuario.id,
@@ -45,6 +57,8 @@ export async function entrar(input: { email: string; senha: string }): Promise<A
     resultado: "Sucesso",
   });
 
+  // Troca obrigatória da senha provisória no primeiro acesso.
+  if (usuario.deveTrocarSenha) redirect("/trocar-senha");
   redirect(usuario.vinculo === "Aluno" ? "/aluno" : "/painel");
 }
 
