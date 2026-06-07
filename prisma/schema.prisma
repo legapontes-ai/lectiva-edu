@@ -252,6 +252,8 @@ model Usuario {
   consentimentos       Consentimento[]
   autocadastro           Autocadastro?  @relation("AutocadastroUsuario")
   autocadastrosRevisados Autocadastro[] @relation("AutocadastroRevisor")
+  ocorrenciasRegistradas Ocorrencia[]   @relation("OcorrenciaRegistrador")
+  analisesConformidade   AnaliseConformidade[]
 
   @@index([idPerfil])
   @@map("usuario")
@@ -331,6 +333,8 @@ model Turma {
   comunicados Comunicado[]
   frequencias Frequencia[]
   avaliacoes  Avaliacao[]
+  planosAula  PlanoAula[]
+  ocorrencias Ocorrencia[]
 
   @@index([idCurso])
   @@map("turma")
@@ -400,6 +404,7 @@ model Professor {
   usuario     Usuario?     @relation(fields: [idUsuario], references: [id])
   disciplinas Disciplina[]
   avaliacoes  Avaliacao[]
+  planosAula  PlanoAula[]
 
   @@map("professor")
 }
@@ -422,6 +427,8 @@ model Aluno {
   avaliacoes   Avaliacao[]
   certificados Certificado[]
   planos       PlanoPagamento[]
+  notasAtividade NotaAtividade[]
+  ocorrencias    Ocorrencia[]
 
   @@map("aluno")
 }
@@ -482,6 +489,7 @@ model Disciplina {
   avaliacoes  Avaliacao[]
   mensagens   MensagemSolicitacao[]
   grades      GradeDisciplina[]
+  planosAula  PlanoAula[]
 
   @@index([idModulo])
   @@index([idProfessor])
@@ -500,7 +508,8 @@ model MaterialBiblioteca {
   nivelAcesso  NivelAcesso  @default(Restrito) @map("nivel_acesso")
   dataInclusao DateTime     @default(now()) @map("data_inclusao")
 
-  disciplina Disciplina? @relation(fields: [idDisciplina], references: [id])
+  disciplina    Disciplina?    @relation(fields: [idDisciplina], references: [id])
+  aulaMateriais AulaMaterial[]
 
   @@index([idDisciplina])
   @@map("material_biblioteca")
@@ -786,4 +795,162 @@ model Autocadastro {
   @@index([status])
   @@index([email])
   @@map("autocadastro")
+}
+
+// ----------------------------------------------------------------------------
+// v1.1 — PLANO DE AULAS (5.14)
+// ----------------------------------------------------------------------------
+enum StatusPlanoAula {
+  EmElaboracao
+  EmAndamento
+  Concluido
+}
+
+model PlanoAula {
+  id           String          @id @default(uuid()) @db.Uuid
+  idDisciplina String          @map("id_disciplina") @db.Uuid
+  idTurma      String          @map("id_turma") @db.Uuid
+  idProfessor  String          @map("id_professor") @db.Uuid
+  objetivos    String?
+  metodologia  String?
+  status       StatusPlanoAula @default(EmElaboracao)
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
+
+  disciplina   Disciplina           @relation(fields: [idDisciplina], references: [id], onDelete: Cascade)
+  turma        Turma                @relation(fields: [idTurma], references: [id], onDelete: Cascade)
+  professor    Professor            @relation(fields: [idProfessor], references: [id])
+  aulas        AulaPlanejada[]
+  atividades   AtividadeAvaliativa[]
+  diarios      DiarioClasse[]
+  conformidade AnaliseConformidade?
+
+  @@unique([idDisciplina, idTurma])
+  @@index([idProfessor])
+  @@map("plano_aula")
+}
+
+model AulaPlanejada {
+  id            String    @id @default(uuid()) @db.Uuid
+  idPlano       String    @map("id_plano") @db.Uuid
+  ordem         Int       @default(1)
+  titulo        String
+  conteudo      String?
+  objetivos     String?
+  dataPrevista  DateTime? @map("data_prevista") @db.Date
+  cargaHoraria  Int?      @map("carga_horaria")
+  concluida     Boolean   @default(false)
+  dataConclusao DateTime? @map("data_conclusao")
+
+  plano       PlanoAula      @relation(fields: [idPlano], references: [id], onDelete: Cascade)
+  materiais   AulaMaterial[]
+  diarios     DiarioClasse[]
+  ocorrencias Ocorrencia[]
+
+  @@index([idPlano])
+  @@map("aula_planejada")
+}
+
+model AulaMaterial {
+  id         String  @id @default(uuid()) @db.Uuid
+  idAula     String  @map("id_aula") @db.Uuid
+  titulo     String
+  arquivoUrl String? @map("arquivo_url")
+  idMaterial String? @map("id_material") @db.Uuid
+
+  aula     AulaPlanejada       @relation(fields: [idAula], references: [id], onDelete: Cascade)
+  material MaterialBiblioteca? @relation(fields: [idMaterial], references: [id])
+
+  @@index([idAula])
+  @@map("aula_material")
+}
+
+model AtividadeAvaliativa {
+  id        String    @id @default(uuid()) @db.Uuid
+  idPlano   String    @map("id_plano") @db.Uuid
+  nome      String
+  peso      Decimal   @default(1) @db.Decimal(5, 2)
+  escalaMax Decimal   @default(10) @map("escala_max") @db.Decimal(4, 2)
+  data      DateTime? @db.Date
+
+  plano PlanoAula       @relation(fields: [idPlano], references: [id], onDelete: Cascade)
+  notas NotaAtividade[]
+
+  @@index([idPlano])
+  @@map("atividade_avaliativa")
+}
+
+model NotaAtividade {
+  id          String   @id @default(uuid()) @db.Uuid
+  idAtividade String   @map("id_atividade") @db.Uuid
+  idAluno     String   @map("id_aluno") @db.Uuid
+  nota        Decimal? @db.Decimal(4, 2)
+
+  atividade AtividadeAvaliativa @relation(fields: [idAtividade], references: [id], onDelete: Cascade)
+  aluno     Aluno               @relation(fields: [idAluno], references: [id], onDelete: Cascade)
+
+  @@unique([idAtividade, idAluno])
+  @@index([idAluno])
+  @@map("nota_atividade")
+}
+
+model DiarioClasse {
+  id                 String   @id @default(uuid()) @db.Uuid
+  idPlano            String   @map("id_plano") @db.Uuid
+  idAula             String?  @map("id_aula") @db.Uuid
+  data               DateTime @db.Date
+  conteudoMinistrado String?  @map("conteudo_ministrado")
+  observacoes        String?
+  criadoEm           DateTime @default(now()) @map("criado_em")
+
+  plano PlanoAula      @relation(fields: [idPlano], references: [id], onDelete: Cascade)
+  aula  AulaPlanejada? @relation(fields: [idAula], references: [id], onDelete: SetNull)
+
+  @@index([idPlano])
+  @@map("diario_classe")
+}
+
+model Ocorrencia {
+  id            String   @id @default(uuid()) @db.Uuid
+  idAluno       String   @map("id_aluno") @db.Uuid
+  idTurma       String?  @map("id_turma") @db.Uuid
+  idAula        String?  @map("id_aula") @db.Uuid
+  tipo          String?
+  descricao     String
+  data          DateTime @default(now()) @db.Date
+  registradoPor String?  @map("registrado_por") @db.Uuid
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  aluno       Aluno          @relation(fields: [idAluno], references: [id], onDelete: Cascade)
+  turma       Turma?         @relation(fields: [idTurma], references: [id])
+  aula        AulaPlanejada? @relation(fields: [idAula], references: [id], onDelete: SetNull)
+  registrador Usuario?       @relation("OcorrenciaRegistrador", fields: [registradoPor], references: [id])
+
+  @@index([idAluno])
+  @@map("ocorrencia")
+}
+
+// ----------------------------------------------------------------------------
+// v1.1 — CONFORMIDADE DOS PLANOS (5.11.12)
+// ----------------------------------------------------------------------------
+enum StatusConformidade {
+  Pendente
+  Conforme
+  NaoConforme
+}
+
+model AnaliseConformidade {
+  id           String             @id @default(uuid()) @db.Uuid
+  idPlano      String             @unique @map("id_plano") @db.Uuid
+  status       StatusConformidade @default(Pendente)
+  observacoes  String?
+  analisadoPor String?            @map("analisado_por") @db.Uuid
+  dataAnalise  DateTime?          @map("data_analise")
+  criadoEm     DateTime           @default(now()) @map("criado_em")
+  atualizadoEm DateTime           @updatedAt @map("atualizado_em")
+
+  plano    PlanoAula @relation(fields: [idPlano], references: [id], onDelete: Cascade)
+  analista Usuario?  @relation(fields: [analisadoPor], references: [id])
+
+  @@map("analise_conformidade")
 }

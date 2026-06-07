@@ -24,6 +24,8 @@ import {
   BarChart3,
   UserPlus,
   SlidersHorizontal,
+  NotebookPen,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,6 +54,8 @@ const ICONS: Record<string, LucideIcon> = {
   report: BarChart3,
   signup: UserPlus,
   params: SlidersHorizontal,
+  lesson: NotebookPen,
+  compliance: ClipboardCheck,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {

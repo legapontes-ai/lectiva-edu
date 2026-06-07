@@ -26,6 +26,8 @@ export const NAV_ITEMS: NavItem[] = [
   // Avaliação
   { href: "/painel/frequencia", label: "Frequência", icon: "frequency", permissao: "frequencia.gerenciar" },
   { href: "/painel/avaliacao", label: "Avaliação", icon: "assessment", permissao: "avaliacao.ver" },
+  { href: "/painel/planos", label: "Planos de aula", icon: "lesson", permissao: "planos.ver" },
+  { href: "/painel/conformidade", label: "Conformidade", icon: "compliance", permissao: "planos.conformidade" },
   // Financeiro e certificação
   { href: "/painel/financeiro", label: "Financeiro", icon: "finance", permissao: "financeiro.ver" },
   { href: "/painel/certificados", label: "Certificados", icon: "certificate", permissao: "certificados.gerenciar" },
