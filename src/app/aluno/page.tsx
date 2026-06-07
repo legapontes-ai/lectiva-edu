@@ -8,13 +8,18 @@ import {
   ClipboardCheck,
   Wallet,
   Award,
+  Receipt,
+  ExternalLink,
 } from "lucide-react";
 import type { SituacaoMatricula } from "@prisma/client";
 import { requireUser } from "@/lib/auth/dal";
 import { sair } from "@/lib/auth/actions";
 import { prisma } from "@/lib/prisma";
 import { rotulo } from "@/lib/enums";
+import { formatarBRL, formatarData } from "@/lib/format";
+import { SITUACAO_PARCELA, varianteParcela } from "@/lib/financeiro/constants";
 import { Logo } from "@/components/brand/logo";
+import { BaixarCertificado } from "@/components/aluno/baixar-certificado";
 import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import {
@@ -62,16 +67,6 @@ const EM_BREVE = [
     descricao: "Acompanhe presenças e o seu desempenho acadêmico.",
     icone: ClipboardCheck,
   },
-  {
-    titulo: "Financeiro",
-    descricao: "Mensalidades, boletos e situação de pagamentos.",
-    icone: Wallet,
-  },
-  {
-    titulo: "Certificados",
-    descricao: "Emissão e download dos seus certificados.",
-    icone: Award,
-  },
 ] as const;
 
 export default async function AreaAlunoPage() {
@@ -85,8 +80,23 @@ export default async function AreaAlunoPage() {
         include: { curso: true, turma: true },
         orderBy: { dataMatricula: "desc" },
       },
+      planos: {
+        include: {
+          curso: { select: { nome: true } },
+          parcelas: { orderBy: { numero: "asc" } },
+        },
+      },
+      certificados: {
+        where: { situacao: { in: ["Emitido", "Reemitido"] } },
+        include: { curso: { select: { nome: true } } },
+        orderBy: { dataEmissao: "desc" },
+      },
     },
   });
+
+  const planos = aluno?.planos ?? [];
+  const saldoDevedor = planos.reduce((s, p) => s + Number(p.saldoDevedor), 0);
+  const certificados = aluno?.certificados ?? [];
 
   const dados = [
     { rotulo: "Nome", valor: aluno?.nome ?? user.nome },
@@ -165,6 +175,155 @@ export default async function AreaAlunoPage() {
                     Protocolo: <span className="text-foreground">{m.protocolo}</span>
                   </p>
                 </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Wallet className="size-5 text-muted-foreground" />
+          <h2 className="font-heading text-lg font-semibold text-foreground">
+            Financeiro
+          </h2>
+        </div>
+        {planos.length === 0 ? (
+          <Card>
+            <CardContent className="flex items-center gap-3 p-8 text-muted-foreground">
+              <Receipt className="size-5 shrink-0" />
+              <p className="text-sm">
+                Você ainda não possui planos de pagamento registrados.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {planos.map((plano) => (
+              <Card key={plano.id}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">{plano.curso.nome}</CardTitle>
+                      <CardDescription>
+                        Saldo devedor:{" "}
+                        <span className="font-medium text-foreground">
+                          {formatarBRL(Number(plano.saldoDevedor))}
+                        </span>
+                      </CardDescription>
+                    </div>
+                    <Badge variant={plano.situacao === "Adimplente" ? "success" : "danger"}>
+                      {plano.situacao === "Adimplente" ? "Adimplente" : "Inadimplente"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {plano.parcelas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma parcela cadastrada.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {plano.parcelas.map((p) => {
+                        const emAberto =
+                          p.situacao === "EmAberto" || p.situacao === "Vencida";
+                        return (
+                          <li
+                            key={p.id}
+                            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0"
+                          >
+                            <div className="min-w-[8rem] space-y-0.5">
+                              <p className="text-sm font-medium text-foreground">
+                                Parcela {p.numero} — {formatarBRL(Number(p.valor))}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Vencimento: {formatarData(p.vencimento)}
+                                {p.dataPagamento
+                                  ? ` · Pago em ${formatarData(p.dataPagamento)}`
+                                  : ""}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Badge variant={varianteParcela(p.situacao)}>
+                                {rotulo(SITUACAO_PARCELA, p.situacao)}
+                              </Badge>
+                              {emAberto ? (
+                                p.comprovante ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    render={
+                                      <a
+                                        href={p.comprovante}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      />
+                                    }
+                                  >
+                                    <ExternalLink className="size-4" /> 2ª via
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    Procure a secretaria
+                                  </span>
+                                )
+                              ) : null}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            {saldoDevedor > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Saldo devedor total:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatarBRL(saldoDevedor)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Award className="size-5 text-muted-foreground" />
+          <h2 className="font-heading text-lg font-semibold text-foreground">
+            Certificados
+          </h2>
+        </div>
+        {certificados.length === 0 ? (
+          <Card>
+            <CardContent className="flex items-center gap-3 p-8 text-muted-foreground">
+              <Award className="size-5 shrink-0" />
+              <p className="text-sm">
+                Você ainda não possui certificados disponíveis. Eles aparecerão aqui
+                assim que forem emitidos.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {certificados.map((c) => (
+              <Card key={c.id}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">{c.curso.nome}</CardTitle>
+                      <CardDescription>
+                        Emitido em {formatarData(c.dataEmissao)} · Código:{" "}
+                        <span className="font-mono text-foreground">
+                          {c.codigoAutenticacao}
+                        </span>
+                      </CardDescription>
+                    </div>
+                    <BaixarCertificado id={c.id} />
+                  </div>
+                </CardHeader>
               </Card>
             ))}
           </div>

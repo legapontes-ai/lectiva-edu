@@ -19,6 +19,8 @@ import {
   Megaphone,
   CalendarCheck,
   ClipboardList,
+  Wallet,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,8 @@ const ICONS: Record<string, LucideIcon> = {
   comunicados: Megaphone,
   frequency: CalendarCheck,
   assessment: ClipboardList,
+  finance: Wallet,
+  certificate: Award,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {
