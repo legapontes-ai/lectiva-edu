@@ -3,6 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { retrySupabase } from "@/lib/resiliencia";
 import { can, type Permissao } from "@/lib/auth/permissions";
 import type { Vinculo } from "@prisma/client";
 
@@ -22,9 +23,8 @@ export type SessionUser = {
  */
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await retrySupabase(() => supabase.auth.getUser(), { rotulo: "auth.getUser", tentativas: 3 });
+  const user = data.user;
   if (!user) return null;
 
   const usuario = await prisma.usuario.findUnique({

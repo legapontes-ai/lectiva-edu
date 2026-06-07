@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { registrarLog } from "@/lib/audit";
+import { retrySupabase } from "@/lib/resiliencia";
 import { loginSchema, solicitarResetSchema } from "@/lib/validations/auth";
 
 type ActionResult = { erro?: string; ok?: boolean; mensagem?: string };
@@ -14,10 +15,14 @@ export async function entrar(input: { email: string; senha: string }): Promise<A
   if (!parsed.success) return { erro: "Dados inválidos." };
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.senha,
-  });
+  const { data, error } = await retrySupabase(
+    () =>
+      supabase.auth.signInWithPassword({
+        email: parsed.data.email,
+        password: parsed.data.senha,
+      }),
+    { rotulo: "auth.signIn" },
+  );
 
   if (error || !data.user) {
     await registrarLog({ acao: "LOGIN", modulo: "Seguranca", resultado: `Falha: ${parsed.data.email}` });
@@ -82,9 +87,10 @@ export async function solicitarReset(input: { email: string }): Promise<ActionRe
 
   const supabase = await createSupabaseServerClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${appUrl}/redefinir-senha`,
-  });
+  await retrySupabase(
+    () => supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${appUrl}/redefinir-senha` }),
+    { rotulo: "auth.resetPassword" },
+  );
   await registrarLog({ acao: "RESET_SENHA_SOLICITADO", modulo: "Seguranca", resultado: parsed.data.email });
 
   return {

@@ -17,6 +17,7 @@ import {
   PERMISSOES_POR_PERFIL,
   VINCULO_POR_PERFIL,
 } from "../src/lib/auth/permissions";
+import { retrySupabase } from "../src/lib/resiliencia";
 
 const prisma = new PrismaClient();
 
@@ -76,7 +77,10 @@ async function carregarUsuariosAuth(): Promise<Map<string, string>> {
   let page = 1;
   // paginação simples (suficiente para o volume do seed)
   for (;;) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+    const { data, error } = await retrySupabase(
+      () => supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 }),
+      { rotulo: "seed.listUsers" },
+    );
     if (error) throw new Error(`listUsers: ${error.message}`);
     for (const u of data.users) if (u.email) map.set(u.email, u.id);
     if (data.users.length < 1000) break;
@@ -91,19 +95,27 @@ async function ensureAuthUser(
 ): Promise<string> {
   const existing = byEmail.get(u.email);
   if (existing) {
-    await supabaseAdmin.auth.admin.updateUserById(existing, {
-      password: u.senha,
-      email_confirm: true,
-      user_metadata: { nome: u.nome },
-    });
+    await retrySupabase(
+      () =>
+        supabaseAdmin.auth.admin.updateUserById(existing, {
+          password: u.senha,
+          email_confirm: true,
+          user_metadata: { nome: u.nome },
+        }),
+      { rotulo: "seed.updateUserById" },
+    );
     return existing;
   }
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email: u.email,
-    password: u.senha,
-    email_confirm: true,
-    user_metadata: { nome: u.nome },
-  });
+  const { data, error } = await retrySupabase(
+    () =>
+      supabaseAdmin.auth.admin.createUser({
+        email: u.email,
+        password: u.senha,
+        email_confirm: true,
+        user_metadata: { nome: u.nome },
+      }),
+    { rotulo: "seed.createUser" },
+  );
   if (error || !data.user) throw new Error(`createUser ${u.email}: ${error?.message}`);
   byEmail.set(u.email, data.user.id);
   return data.user.id;

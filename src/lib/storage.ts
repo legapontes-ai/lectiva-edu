@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { retrySupabase } from "@/lib/resiliencia";
 
 type BucketUpload = "documentos" | "materiais" | "certificados";
 
@@ -19,10 +20,14 @@ export async function uploadDocumento(
   const tipo =
     contentType ?? (arquivo instanceof File ? arquivo.type || undefined : undefined);
 
-  const { data, error } = await supabase.storage.from(bucket).upload(caminho, arquivo, {
-    upsert: true,
-    ...(tipo ? { contentType: tipo } : {}),
-  });
+  const { data, error } = await retrySupabase(
+    () =>
+      supabase.storage.from(bucket).upload(caminho, arquivo, {
+        upsert: true,
+        ...(tipo ? { contentType: tipo } : {}),
+      }),
+    { rotulo: `storage.upload(${bucket})` },
+  );
 
   if (error) {
     throw new Error(`Falha ao enviar arquivo para "${bucket}": ${error.message}`);
@@ -42,9 +47,10 @@ export async function urlAssinada(
 ): Promise<string | null> {
   const supabase = createSupabaseAdminClient();
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, expiraSeg);
+  const { data, error } = await retrySupabase(
+    () => supabase.storage.from(bucket).createSignedUrl(path, expiraSeg),
+    { rotulo: `storage.signedUrl(${bucket})` },
+  );
 
   if (error || !data) {
     return null;

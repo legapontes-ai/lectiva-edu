@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { retrySupabase } from "@/lib/resiliencia";
 
 const PROTEGIDAS = ["/painel", "/aluno"];
 const INATIVIDADE_MIN = Number(process.env.SESSION_INACTIVITY_MINUTES ?? 30);
@@ -29,9 +30,8 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await retrySupabase(() => supabase.auth.getUser(), { rotulo: "proxy.getUser", tentativas: 2 });
+  const user = data.user;
 
   const { pathname } = request.nextUrl;
   const protegida = PROTEGIDAS.some((p) => pathname === p || pathname.startsWith(p + "/"));
