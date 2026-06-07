@@ -89,7 +89,7 @@ export function AulaForm({
         <Input id={`data-${aula?.id ?? "novo"}`} type="date" {...register("dataPrevista")} />
       </Field>
 
-      <Field label="Conteúdo" htmlFor={`conteudo-${aula?.id ?? "novo"}`} error={errors.conteudo?.message}>
+      <Field label="Matéria / conteúdo da aula" htmlFor={`conteudo-${aula?.id ?? "novo"}`} error={errors.conteudo?.message} hint="Temas/assuntos que serão dados nesta aula.">
         <Textarea id={`conteudo-${aula?.id ?? "novo"}`} {...register("conteudo")} />
       </Field>
 

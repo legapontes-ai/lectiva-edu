@@ -234,10 +234,61 @@ export default async function PlanoDetalhePage({
       {/* (b) AULAS ------------------------------------------------------------ */}
       {aba === "aulas" && (
         <div className="space-y-6">
+          {/* Cronograma consolidado: data + matéria/conteúdo por aula */}
+          {plano.aulas.length > 0 && (
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarDays className="size-4 text-muted-foreground" /> Cronograma
+                </CardTitle>
+              </CardHeader>
+              <div className="overflow-x-auto border-t border-border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Nº</th>
+                      <th className="px-4 py-3 font-semibold">Data prevista</th>
+                      <th className="px-4 py-3 font-semibold">Aula</th>
+                      <th className="px-4 py-3 font-semibold">Matéria / conteúdo</th>
+                      <th className="px-4 py-3 font-semibold">CH</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {plano.aulas.map((a) => (
+                      <tr key={a.id} className="align-top hover:bg-muted/30">
+                        <td className="px-4 py-3 text-muted-foreground">{a.ordem}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                          {a.dataPrevista ? formatarData(a.dataPrevista) : "—"}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-foreground">{a.titulo}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {a.conteudo
+                            ? a.conteudo.length > 90
+                              ? a.conteudo.slice(0, 90) + "…"
+                              : a.conteudo
+                            : "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                          {a.cargaHoraria ? `${a.cargaHoraria}h` : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={a.concluida ? "success" : "info"}>
+                            {a.concluida ? "Ministrada" : "Prevista"}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
           {podeEditar && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Adicionar aula</CardTitle>
+                <CardTitle className="text-base">Adicionar aula ao cronograma</CardTitle>
               </CardHeader>
               <CardContent>
                 <AulaForm idPlano={plano.id} />
