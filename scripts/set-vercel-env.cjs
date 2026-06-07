@@ -50,13 +50,27 @@ const base = `https://api.vercel.com`;
 const qs = teamId ? `?teamId=${teamId}` : "";
 const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function api(method, url, body) {
-  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
-  const text = await res.text();
-  let json;
-  try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-  if (!res.ok) throw new Error(`${method} ${url.replace(token, "***")} -> ${res.status} ${JSON.stringify(json).slice(0, 300)}`);
-  return json;
+  const TENTATIVAS = 4;
+  for (let i = 0; i < TENTATIVAS; i++) {
+    const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    const text = await res.text();
+    let json;
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+    // 429/5xx = limitação temporária do servidor: backoff + jitter (respeita Retry-After).
+    if ((res.status === 429 || res.status >= 500) && i < TENTATIVAS - 1) {
+      const ra = Number(res.headers.get("retry-after"));
+      const teto = Math.min(8000, 300 * 2 ** i);
+      const espera = ra > 0 ? ra * 1000 : Math.round(teto / 2 + Math.random() * (teto / 2));
+      console.warn(`[resiliencia] vercel-api ${res.status} transitório. Retry ${i + 1}/${TENTATIVAS - 1} em ${espera}ms.`);
+      await sleep(espera);
+      continue;
+    }
+    if (!res.ok) throw new Error(`${method} ${url.replace(token, "***")} -> ${res.status} ${JSON.stringify(json).slice(0, 300)}`);
+    return json;
+  }
 }
 
 (async () => {

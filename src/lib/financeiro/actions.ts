@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/dal";
 import { registrarLog } from "@/lib/audit";
 import { getGateway } from "@/lib/pagamentos/gateway";
+import { retryAsync } from "@/lib/resiliencia";
 import { planoSchema, baixaSchema, type PlanoInput, type BaixaInput } from "./schema";
 
 type Result = { erro?: string };
@@ -114,12 +115,17 @@ export async function gerarCobranca(idParcela: string): Promise<Result> {
 
   try {
     const gateway = getGateway();
-    const cobranca = await gateway.criarCobranca({
-      valor: Number(parcela.valor),
-      vencimento: parcela.vencimento,
-      descricao: `Parcela ${parcela.numero} — ${parcela.plano.curso.nome} — ${parcela.plano.aluno.nome}`,
-      idParcela: parcela.id,
-    });
+    // Resiliente a limitação temporária do provedor (429/5xx/rede) — backoff + jitter.
+    const cobranca = await retryAsync(
+      () =>
+        gateway.criarCobranca({
+          valor: Number(parcela.valor),
+          vencimento: parcela.vencimento,
+          descricao: `Parcela ${parcela.numero} — ${parcela.plano.curso.nome} — ${parcela.plano.aluno.nome}`,
+          idParcela: parcela.id,
+        }),
+      { rotulo: "gateway.criarCobranca" },
+    );
 
     await prisma.parcela.update({
       where: { id: idParcela },
