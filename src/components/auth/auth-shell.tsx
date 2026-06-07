@@ -12,7 +12,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-secondary/50 to-background px-6 py-12">
+    <main className="bg-hero-brand flex min-h-screen flex-col items-center justify-center px-6 py-12">
       <Link href="/" className="mb-8">
         <Logo size="lg" showSlogan />
       </Link>

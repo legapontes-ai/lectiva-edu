@@ -38,69 +38,84 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-link: var(--link);
+  --color-blue-soft: var(--brand-blue-soft);
+  --color-green-soft: var(--brand-green-soft);
+  --color-navy: var(--brand-navy);
+  --color-navy-dark: var(--brand-navy-dark);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Raios do manual (linguagem visual refeita) */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-2xl: 32px;
+  --radius-3xl: 36px;
+  --radius-4xl: 40px;
 }
 
 /* ============================================================
-   Tokens da marca Lectiva Edu (modo claro)
-   Paleta oficial do brand book.
+   Tokens da marca Lectiva Edu — manual "linguagem visual refeita"
    ============================================================ */
 :root {
-  --radius: 0.625rem;
+  --radius: 1.375rem; /* 22px (radius-lg) */
 
-  /* Cores cruas da marca */
-  --brand-blue: #003b73; /* azul institucional (primária)  */
-  --brand-blue-deep: #00264a; /* azul profundo (texto/headers)  */
-  --brand-blue-tech: #0067b1; /* azul tecnológico (links/ações) */
-  --brand-green: #43a047; /* verde validação (sucesso/CTA)  */
-  --brand-green-safe: #1b7f2a; /* verde segurança (confirmações) */
-  --brand-bg: #f7fafc; /* fundo claro                    */
+  /* Cores cruas do manual */
+  --brand-navy: #003b73; /* azul institucional        */
+  --brand-navy-dark: #00264a; /* azul profundo         */
+  --brand-blue: #0067b1; /* azul tecnológico (links)  */
+  --brand-blue-soft: #e9f4fc; /* azul suave           */
+  --brand-green: #43a047; /* verde validação          */
+  --brand-green-dark: #1b7f2a; /* verde segurança      */
+  --brand-green-soft: #eaf7ea; /* verde suave          */
+  --brand-ink: #182331; /* texto principal            */
+  --brand-gray: #5d6978; /* texto secundário          */
+  --brand-light: #f7fafc; /* fundo claro              */
+  --brand-line: #dce7ef; /* linhas/bordas            */
 
-  /* Mapeamento para os tokens do design system */
-  --background: var(--brand-bg);
-  --foreground: var(--brand-blue-deep);
+  --shadow-brand: 0 18px 42px rgba(0, 59, 115, 0.12);
+  --shadow-soft: 0 10px 26px rgba(0, 38, 74, 0.07);
+
+  /* Tipografia (Inter única) */
+  --font-heading: var(--font-sans);
+
+  /* Mapeamento para o design system */
+  --background: var(--brand-light);
+  --foreground: var(--brand-ink);
   --card: #ffffff;
-  --card-foreground: var(--brand-blue-deep);
+  --card-foreground: var(--brand-ink);
   --popover: #ffffff;
-  --popover-foreground: var(--brand-blue-deep);
-  --primary: var(--brand-blue);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-navy);
   --primary-foreground: #ffffff;
-  --secondary: #e6eef5;
-  --secondary-foreground: var(--brand-blue-deep);
+  --secondary: var(--brand-blue-soft);
+  --secondary-foreground: var(--brand-navy);
   --muted: #eef2f6;
-  --muted-foreground: #51657a;
-  --accent: #e1eaf3;
+  --muted-foreground: var(--brand-gray);
+  --accent: var(--brand-blue-soft);
   --accent-foreground: var(--brand-blue);
-  --link: var(--brand-blue-tech);
+  --link: var(--brand-blue);
   --success: var(--brand-green);
   --success-foreground: #ffffff;
-  --destructive: #dc2626;
-  --border: #d8e1ea;
-  --input: #d8e1ea;
-  --ring: var(--brand-blue-tech);
-  --chart-1: var(--brand-blue);
-  --chart-2: var(--brand-blue-tech);
+  --destructive: #a92820;
+  --border: var(--brand-line);
+  --input: var(--brand-line);
+  --ring: var(--brand-blue);
+  --chart-1: var(--brand-navy);
+  --chart-2: var(--brand-blue);
   --chart-3: var(--brand-green);
-  --chart-4: var(--brand-green-safe);
+  --chart-4: var(--brand-green-dark);
   --chart-5: #6baed6;
-  --sidebar: var(--brand-blue-deep);
+  --sidebar: var(--brand-navy);
   --sidebar-foreground: #e6eef5;
-  --sidebar-primary: var(--brand-blue-tech);
+  --sidebar-primary: var(--brand-blue);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--brand-blue);
+  --sidebar-accent: var(--brand-navy);
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: var(--brand-blue-tech);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: var(--brand-blue);
 }
 
 @layer base {
@@ -121,4 +136,18 @@
   h6 {
     @apply font-heading;
   }
+}
+
+/* Degradês reutilizáveis do manual */
+.bg-hero-brand {
+  background:
+    radial-gradient(circle at 85% 12%, rgba(67, 160, 71, 0.13), transparent 28%),
+    radial-gradient(circle at 12% 20%, rgba(0, 103, 177, 0.1), transparent 26%),
+    linear-gradient(135deg, #fff 0%, var(--brand-blue-soft) 70%, var(--brand-green-soft) 100%);
+}
+.bg-brand-primary {
+  background-image: linear-gradient(135deg, var(--brand-blue), var(--brand-green));
+}
+.bg-sidebar-brand {
+  background-image: linear-gradient(180deg, var(--brand-navy), var(--brand-navy-dark));
 }

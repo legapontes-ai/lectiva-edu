@@ -63,7 +63,7 @@ export default async function Home() {
 
       <main className="flex-1">
         {/* Hero institucional */}
-        <section className="border-b border-border bg-gradient-to-b from-secondary/60 to-background">
+        <section className="bg-hero-brand border-b border-border">
           <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
             <div className="max-w-3xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-link">

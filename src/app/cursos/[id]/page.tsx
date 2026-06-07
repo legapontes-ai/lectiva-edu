@@ -101,7 +101,7 @@ export default async function CursoDetalhePage({
 
       <main className="flex-1">
         {/* Cabeçalho */}
-        <section className="border-b border-border bg-gradient-to-b from-secondary/60 to-background">
+        <section className="bg-hero-brand border-b border-border">
           <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
             <Link
               href="/cursos"
