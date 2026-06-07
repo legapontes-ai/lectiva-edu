@@ -27,6 +27,12 @@ export const SITUACAO_TURMA = [
   { value: "Concluida", label: "Concluída" },
 ] as const;
 
+export const STATUS_DISCIPLINA = [
+  { value: "Programada", label: "Programada" },
+  { value: "EmAndamento", label: "Em andamento" },
+  { value: "Concluida", label: "Concluída" },
+] as const;
+
 export const SITUACAO_PROFESSOR = [
   { value: "Ativo", label: "Ativo" },
   { value: "Inativo", label: "Inativo" },

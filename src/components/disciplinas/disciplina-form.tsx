@@ -12,13 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-/** Opções de status (StatusDisciplina) — rótulos pt-BR locais. */
-export const STATUS_DISCIPLINA = [
-  { value: "Programada", label: "Programada" },
-  { value: "EmAndamento", label: "Em andamento" },
-  { value: "Concluida", label: "Concluída" },
-] as const;
+import { STATUS_DISCIPLINA } from "@/lib/enums";
 
 export type DisciplinaFormValues = Partial<DisciplinaInput> & { id?: string };
 
