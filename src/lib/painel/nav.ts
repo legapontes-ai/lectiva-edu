@@ -13,10 +13,22 @@ export type NavItem = {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/painel", label: "Visão geral", icon: "dashboard", permissao: "dashboard.ver" },
+  // Estrutura acadêmica
   { href: "/painel/cursos", label: "Cursos", icon: "course", permissao: "cursos.ver" },
   { href: "/painel/turmas", label: "Turmas", icon: "class", permissao: "turmas.gerenciar" },
+  { href: "/painel/disciplinas", label: "Disciplinas", icon: "disciplina", permissao: "disciplinas.ver" },
+  { href: "/painel/grade", label: "Matriz curricular", icon: "grade", permissao: "grade.gerenciar" },
+  // Conteúdo e comunicação
+  { href: "/painel/biblioteca", label: "Biblioteca", icon: "library", permissao: "materiais.ver" },
+  { href: "/painel/calendario", label: "Calendário", icon: "calendar", permissao: "calendario.gerenciar" },
+  { href: "/painel/comunicados", label: "Comunicados", icon: "comunicados", permissao: "comunicados.gerenciar" },
+  // Avaliação
+  { href: "/painel/frequencia", label: "Frequência", icon: "frequency", permissao: "frequencia.gerenciar" },
+  { href: "/painel/avaliacao", label: "Avaliação", icon: "assessment", permissao: "avaliacao.ver" },
+  // Pessoas
   { href: "/painel/alunos", label: "Alunos", icon: "student", permissao: "alunos.ver" },
   { href: "/painel/professores", label: "Docentes", icon: "teacher", permissao: "professores.ver" },
+  // Administração e segurança
   { href: "/painel/usuarios", label: "Usuários", icon: "users", permissao: "usuarios.gerenciar" },
   { href: "/painel/consentimentos", label: "Consentimentos", icon: "lgpd", permissao: "lgpd.gerenciar" },
   { href: "/painel/auditoria", label: "Auditoria", icon: "audit", permissao: "logs.ver" },

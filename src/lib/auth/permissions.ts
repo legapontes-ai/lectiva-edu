@@ -137,5 +137,11 @@ export const VINCULO_POR_PERFIL: Record<string, "Aluno" | "Professor" | "Coorden
  */
 export function can(permissoesDoUsuario: Iterable<string>, exigida: Permissao): boolean {
   const set = permissoesDoUsuario instanceof Set ? permissoesDoUsuario : new Set(permissoesDoUsuario);
-  return set.has(PERMISSAO_ADMIN_FULL) || set.has(exigida);
+  if (set.has(PERMISSAO_ADMIN_FULL) || set.has(exigida)) return true;
+  // Quem pode gerenciar um módulo também pode visualizá-lo: "<mod>.ver" é
+  // concedido implicitamente por "<mod>.gerenciar".
+  if (exigida.endsWith(".ver")) {
+    return set.has(exigida.slice(0, -4) + ".gerenciar");
+  }
+  return false;
 }

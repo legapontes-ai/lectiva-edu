@@ -12,6 +12,13 @@ import {
   ScrollText,
   ShieldCheck,
   Lock,
+  BookText,
+  Network,
+  Library,
+  CalendarDays,
+  Megaphone,
+  CalendarCheck,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +35,13 @@ const ICONS: Record<string, LucideIcon> = {
   audit: ScrollText,
   lgpd: ShieldCheck,
   security: Lock,
+  disciplina: BookText,
+  grade: Network,
+  library: Library,
+  calendar: CalendarDays,
+  comunicados: Megaphone,
+  frequency: CalendarCheck,
+  assessment: ClipboardList,
 };
 
 export function Sidebar({ items }: { items: NavItem[] }) {
