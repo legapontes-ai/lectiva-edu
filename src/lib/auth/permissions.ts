@@ -100,6 +100,7 @@ export const PERMISSOES_POR_PERFIL: Record<string, Permissao[]> = {
   ],
   [PERFIS.SECRETARIA]: [
     "alunos.gerenciar",
+    "alunos.ver",
     "matriculas.gerenciar",
     "cursos.ver",
     "turmas.gerenciar",

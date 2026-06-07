@@ -13,6 +13,10 @@ export type NavItem = {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/painel", label: "Visão geral", icon: "dashboard", permissao: "dashboard.ver" },
+  { href: "/painel/cursos", label: "Cursos", icon: "course", permissao: "cursos.ver" },
+  { href: "/painel/turmas", label: "Turmas", icon: "class", permissao: "turmas.gerenciar" },
+  { href: "/painel/alunos", label: "Alunos", icon: "student", permissao: "alunos.ver" },
+  { href: "/painel/professores", label: "Docentes", icon: "teacher", permissao: "professores.ver" },
+  { href: "/painel/usuarios", label: "Usuários", icon: "users", permissao: "usuarios.gerenciar" },
   { href: "/painel/auditoria", label: "Auditoria", icon: "audit", permissao: "logs.ver" },
-  // Cadastros (Usuários, Cursos, Turmas, Alunos, Docentes) entram no incremento 1B.
 ];
