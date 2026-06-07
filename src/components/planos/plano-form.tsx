@@ -32,6 +32,7 @@ export function PlanoForm({
 }) {
   const router = useRouter();
   const [erro, setErro] = useState<string | null>(null);
+  const [porSemana, setPorSemana] = useState(1);
   const {
     register,
     handleSubmit,
@@ -71,11 +72,16 @@ export function PlanoForm({
       setErro("Informe a data de início para gerar o cronograma.");
       return;
     }
-    const n = AULAS_POR_PERIODO[per || ""] ?? 4;
+    const semanas = AULAS_POR_PERIODO[per || ""] ?? 4;
+    const perSem = Math.max(1, Math.min(7, porSemana || 1));
+    const total = semanas * perSem;
+    const espacamento = Math.max(1, Math.floor(7 / perSem)); // dias entre aulas na mesma semana
     const base = new Date(`${inicio}T00:00:00`);
-    const novas = Array.from({ length: n }, (_, i) => {
+    const novas = Array.from({ length: total }, (_, i) => {
+      const semana = Math.floor(i / perSem);
+      const posicao = i % perSem;
       const d = new Date(base);
-      d.setDate(base.getDate() + i * 7); // 1 aula por semana
+      d.setDate(base.getDate() + semana * 7 + posicao * espacamento);
       return { titulo: `Aula ${i + 1}`, conteudo: "", dataPrevista: d.toISOString().slice(0, 10), cargaHoraria: undefined };
     });
     replace(novas);
@@ -146,7 +152,19 @@ export function PlanoForm({
       <div className="rounded-lg border border-border p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foreground">Cronograma de aulas</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              Aulas/semana
+              <Input
+                type="number"
+                min={1}
+                max={7}
+                value={porSemana}
+                onChange={(e) => setPorSemana(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
+                className="h-8 w-16"
+                aria-label="Aulas por semana"
+              />
+            </label>
             <Button type="button" variant="consulta" size="sm" onClick={gerarDatas}>
               <CalendarRange className="size-4" /> Gerar datas
             </Button>
