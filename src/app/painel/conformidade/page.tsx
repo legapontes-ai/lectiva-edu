@@ -39,24 +39,28 @@ export default async function ConformidadePage({
       turma: { select: { nome: true, anoPeriodo: true } },
       professor: { select: { nome: true } },
       conformidade: { select: { status: true } },
-      aulas: { select: { cargaHoraria: true, concluida: true } },
+      aulas: { select: { cargaHoraria: true, execucao: true } },
       _count: { select: { aulas: true } },
     },
   });
 
   const itens = planos.map((p) => {
     const totalAulas = p._count.aulas;
-    const aulasConcluidas = p.aulas.filter((a) => a.concluida).length;
+    const contagem = { Integral: 0, Parcial: 0, NaoDado: 0, Pendente: 0 };
+    for (const a of p.aulas) {
+      const k = (a.execucao in contagem ? a.execucao : "Pendente") as keyof typeof contagem;
+      contagem[k]++;
+    }
     const cargaSomada = p.aulas.reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
     const sinais = calcularSinais({
       statusPlano: p.status,
       conformidade: p.conformidade?.status ?? null,
       totalAulas,
-      aulasConcluidas,
+      contagem,
       cargaSomada,
       cargaDisciplina: p.disciplina.cargaHoraria,
     });
-    return { plano: p, totalAulas, aulasConcluidas, sinais };
+    return { plano: p, totalAulas, sinais };
   });
 
   const resumo = {
@@ -118,7 +122,7 @@ export default async function ConformidadePage({
                   <th className="px-4 py-3 font-semibold">Disciplina / Turma</th>
                   <th className="px-4 py-3 font-semibold">Professor</th>
                   <th className="px-4 py-3 font-semibold">Plano</th>
-                  <th className="px-4 py-3 font-semibold">Evolução</th>
+                  <th className="px-4 py-3 font-semibold">Execução das aulas</th>
                   <th className="px-4 py-3 font-semibold">Carga (aulas/disc.)</th>
                   <th className="px-4 py-3 font-semibold">Sinais</th>
                   <th className="px-4 py-3 font-semibold">Conformidade</th>
@@ -126,7 +130,7 @@ export default async function ConformidadePage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {visiveis.map(({ plano, totalAulas, aulasConcluidas, sinais }) => (
+                {visiveis.map(({ plano, totalAulas, sinais }) => (
                   <tr key={plano.id} className="hover:bg-muted/30">
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{plano.disciplina.nome}</div>
@@ -137,26 +141,12 @@ export default async function ConformidadePage({
                     <td className="px-4 py-3 text-muted-foreground">{plano.professor.nome}</td>
                     <td className="px-4 py-3 text-muted-foreground">{rotuloPlano(plano.status)}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-1.5 w-20 overflow-hidden rounded-full bg-muted"
-                          role="progressbar"
-                          aria-valuenow={sinais.evolucao}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label={`Evolução ${sinais.evolucao}%`}
-                        >
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${sinais.evolucao}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {sinais.evolucao}%
-                        </span>
-                      </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {aulasConcluidas}/{totalAulas} aula(s)
+                      <div className="text-foreground">{sinais.dadas}/{totalAulas} dada(s)</div>
+                      <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
+                        <span className="text-success">Integral {sinais.contagem.Integral}</span>
+                        <span className="text-[#946200]">Parcial {sinais.contagem.Parcial}</span>
+                        <span className="text-destructive">Não dada {sinais.contagem.NaoDado}</span>
+                        <span className="text-muted-foreground">Pend. {sinais.contagem.Pendente}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">

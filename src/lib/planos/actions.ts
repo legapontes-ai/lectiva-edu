@@ -7,7 +7,8 @@ import { requirePermission, requireUser } from "@/lib/auth/dal";
 import { registrarLog } from "@/lib/audit";
 import { uploadDocumento } from "@/lib/storage";
 import {
-  planoSchema,
+  novoPlanoSchema,
+  execucaoSchema,
   planoDetalhesSchema,
   aulaSchema,
   atividadeSchema,
@@ -15,7 +16,8 @@ import {
   diarioSchema,
   ocorrenciaSchema,
   materialAulaSchema,
-  type PlanoInput,
+  type NovoPlanoInput,
+  type ExecucaoInput,
   type PlanoDetalhesInput,
   type AulaInput,
   type AtividadeInput,
@@ -23,6 +25,8 @@ import {
   type DiarioInput,
   type OcorrenciaInput,
 } from "@/lib/validations/plano";
+
+const PERIODICIDADES = ["Mensal", "Bimestral", "Semestral", "Anual"] as const;
 
 type Result = { erro?: string; ok?: boolean };
 
@@ -70,10 +74,11 @@ async function planoDaAula(idAula: string): Promise<
 // ----------------------------------------------------------------------------
 // PLANO
 // ----------------------------------------------------------------------------
-export async function criarPlano(input: PlanoInput): Promise<Result> {
+export async function criarPlano(input: NovoPlanoInput): Promise<Result> {
   const user = await requirePermission("planos.elaborar");
-  const parsed = planoSchema.safeParse(input);
+  const parsed = novoPlanoSchema.safeParse(input);
   if (!parsed.success) return { erro: "Dados inválidos." };
+  const d = parsed.data;
 
   const professor = await prisma.professor.findUnique({
     where: { idUsuario: user.id },
@@ -83,27 +88,42 @@ export async function criarPlano(input: PlanoInput): Promise<Result> {
 
   // A disciplina precisa ser do professor logado.
   const disciplina = await prisma.disciplina.findFirst({
-    where: { id: parsed.data.idDisciplina, idProfessor: professor.id },
+    where: { id: d.idDisciplina, idProfessor: professor.id },
     select: { id: true, nome: true },
   });
   if (!disciplina) return { erro: "Disciplina inválida ou não atribuída a você." };
 
   const existente = await prisma.planoAula.findUnique({
-    where: { idDisciplina_idTurma: { idDisciplina: parsed.data.idDisciplina, idTurma: parsed.data.idTurma } },
+    where: { idDisciplina_idTurma: { idDisciplina: d.idDisciplina, idTurma: d.idTurma } },
     select: { id: true },
   });
   if (existente) return { erro: "Já existe um plano para esta disciplina e turma." };
+
+  const periodicidade = d.periodicidade && PERIODICIDADES.includes(d.periodicidade as (typeof PERIODICIDADES)[number])
+    ? (d.periodicidade as (typeof PERIODICIDADES)[number])
+    : null;
 
   let novoId: string;
   try {
     const plano = await prisma.planoAula.create({
       data: {
-        idDisciplina: parsed.data.idDisciplina,
-        idTurma: parsed.data.idTurma,
+        idDisciplina: d.idDisciplina,
+        idTurma: d.idTurma,
         idProfessor: professor.id,
-        objetivos: parsed.data.objetivos ?? null,
-        metodologia: parsed.data.metodologia ?? null,
-        status: parsed.data.status,
+        objetivos: d.objetivos ?? null,
+        metodologia: d.metodologia ?? null,
+        periodicidade,
+        dataInicio: d.dataInicio ? new Date(d.dataInicio) : null,
+        status: "EmAndamento",
+        aulas: {
+          create: d.aulas.map((a, i) => ({
+            ordem: i + 1,
+            titulo: a.titulo,
+            conteudo: a.conteudo ?? null,
+            dataPrevista: a.dataPrevista ? new Date(a.dataPrevista) : null,
+            cargaHoraria: a.cargaHoraria ?? null,
+          })),
+        },
       },
       select: { id: true },
     });
@@ -117,7 +137,7 @@ export async function criarPlano(input: PlanoInput): Promise<Result> {
     perfil: user.vinculo,
     acao: "PLANO_CRIADO",
     modulo: "Planos de aula",
-    resultado: disciplina.nome,
+    resultado: `${disciplina.nome} (${d.aulas.length} aula(s))`,
   });
   revalidatePath("/painel/planos");
   redirect(`/painel/planos/${novoId}`);
@@ -234,27 +254,41 @@ export async function removerAula(idAula: string): Promise<Result> {
   return { ok: true };
 }
 
-export async function alternarConclusaoAula(idAula: string): Promise<Result> {
+/**
+ * Registra a execução de uma aula: integral / parcial / não dado.
+ * Quando não for integral, o motivo é obrigatório. Captura o docente
+ * (titular ou substituto + nome). Mantém `concluida` em sincronia.
+ */
+export async function registrarExecucaoAula(idAula: string, input: ExecucaoInput): Promise<Result> {
   const user = await requirePermission("planos.elaborar");
   const ctx = await planoDaAula(idAula);
   if ("erro" in ctx) return ctx;
+  const parsed = execucaoSchema.safeParse(input);
+  if (!parsed.success) {
+    return { erro: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  const d = parsed.data;
+  const dada = d.execucao === "Integral" || d.execucao === "Parcial";
+  const docenteTipo =
+    d.docenteTipo === "Titular" || d.docenteTipo === "Substituto" ? d.docenteTipo : null;
 
-  const aula = await prisma.aulaPlanejada.findUnique({
-    where: { id: idAula },
-    select: { concluida: true },
-  });
-  if (!aula) return { erro: SEM_ACESSO };
-
-  const concluida = !aula.concluida;
   await prisma.aulaPlanejada.update({
     where: { id: idAula },
-    data: { concluida, dataConclusao: concluida ? new Date() : null },
+    data: {
+      execucao: d.execucao,
+      concluida: dada,
+      dataConclusao: dada ? new Date() : null,
+      motivoExecucao: d.execucao === "Integral" || d.execucao === "Pendente" ? null : (d.motivo ?? null),
+      docenteTipo,
+      docenteNome: d.docenteNome?.trim() ? d.docenteNome.trim() : null,
+    },
   });
   await registrarLog({
     idUsuario: user.id,
     perfil: user.vinculo,
-    acao: concluida ? "AULA_CONCLUIDA" : "AULA_REABERTA",
+    acao: "AULA_EXECUCAO_REGISTRADA",
     modulo: "Planos de aula",
+    resultado: d.execucao,
   });
   revalidatePath(`/painel/planos/${ctx.idPlano}`);
   return { ok: true };

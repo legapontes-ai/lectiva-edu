@@ -9,7 +9,6 @@ import { PageHeader } from "@/components/painel/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { BarraEvolucao } from "@/components/planos/barra-evolucao";
 
 export const metadata: Metadata = { title: "Planos de aula" };
 
@@ -44,7 +43,7 @@ export default async function PlanosPage() {
       disciplina: { select: { nome: true, cargaHoraria: true } },
       turma: { select: { nome: true, curso: { select: { nome: true } } } },
       professor: { select: { nome: true } },
-      aulas: { select: { concluida: true, cargaHoraria: true } },
+      aulas: { select: { execucao: true } },
     },
   });
 
@@ -82,17 +81,11 @@ export default async function PlanosPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {planos.map((p) => {
             const total = p.aulas.length;
-            const concluidas = p.aulas.filter((a) => a.concluida).length;
-            const chTotal = p.aulas.reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
-            const chConcluida = p.aulas
-              .filter((a) => a.concluida)
-              .reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
-            const pct =
-              chTotal > 0
-                ? Math.round((chConcluida / chTotal) * 100)
-                : total > 0
-                  ? Math.round((concluidas / total) * 100)
-                  : 0;
+            const c = { Integral: 0, Parcial: 0, NaoDado: 0, Pendente: 0 };
+            for (const a of p.aulas) {
+              const k = (a.execucao in c ? a.execucao : "Pendente") as keyof typeof c;
+              c[k]++;
+            }
 
             return (
               <Link
@@ -117,11 +110,13 @@ export default async function PlanosPage() {
                 )}
 
                 <div className="mt-4">
-                  <BarraEvolucao percentual={pct} />
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {concluidas} de {total} aula(s) ministrada(s)
-                    {chTotal > 0 ? ` · ${chConcluida}/${chTotal}h` : ""}
-                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="success">Integral {c.Integral}</Badge>
+                    <Badge variant="warning">Parcial {c.Parcial}</Badge>
+                    <Badge variant="danger">Não dada {c.NaoDado}</Badge>
+                    <Badge variant="muted">Pendente {c.Pendente}</Badge>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{total} aula(s) no cronograma</p>
                 </div>
               </Link>
             );

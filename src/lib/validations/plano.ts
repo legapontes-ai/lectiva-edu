@@ -84,3 +84,77 @@ export const materialAulaSchema = z.object({
   arquivoUrl: optStr,
 });
 export type MaterialAulaInput = z.infer<typeof materialAulaSchema>;
+
+// ---------------------------------------------------------------------------
+// v1.2 — Plano parametrizado + execução por aula
+// ---------------------------------------------------------------------------
+export const PERIODICIDADE = [
+  { value: "Mensal", label: "Mensal" },
+  { value: "Bimestral", label: "Bimestral" },
+  { value: "Semestral", label: "Semestral" },
+  { value: "Anual", label: "Anual" },
+] as const;
+/** Nº de aulas sugerido por periodicidade (1 por semana). */
+export const AULAS_POR_PERIODO: Record<string, number> = { Mensal: 4, Bimestral: 8, Semestral: 20, Anual: 40 };
+
+export const EXECUCAO = [
+  { value: "Pendente", label: "Pendente" },
+  { value: "Integral", label: "Dado integral" },
+  { value: "Parcial", label: "Dado parcial" },
+  { value: "NaoDado", label: "Não dado" },
+] as const;
+
+/** Rótulo + variante de badge por estado de execução. */
+export const EXECUCAO_INFO: Record<string, { label: string; variant: "success" | "warning" | "danger" | "muted" }> = {
+  Integral: { label: "Dado integral", variant: "success" },
+  Parcial: { label: "Dado parcial", variant: "warning" },
+  NaoDado: { label: "Não dado", variant: "danger" },
+  Pendente: { label: "Pendente", variant: "muted" },
+};
+
+export const TIPO_DOCENTE = [
+  { value: "Titular", label: "Titular" },
+  { value: "Substituto", label: "Substituto" },
+] as const;
+
+export const MOTIVOS_EXECUCAO = [
+  "Feriado",
+  "Falta do professor",
+  "Evento/atividade",
+  "Tempo insuficiente",
+  "Greve",
+  "Outro",
+] as const;
+
+const aulaNovaSchema = z.object({
+  titulo: z.string().trim().min(2, { error: "Informe o título/matéria da aula." }),
+  conteudo: optStr,
+  dataPrevista: optStr,
+  cargaHoraria: optNum,
+});
+
+/** Criação de plano já com as aulas (matérias + datas) e parametrização. */
+export const novoPlanoSchema = z.object({
+  idDisciplina: z.uuid({ error: "Selecione a disciplina." }),
+  idTurma: z.uuid({ error: "Selecione a turma." }),
+  periodicidade: optStr,
+  dataInicio: optStr,
+  objetivos: optStr,
+  metodologia: optStr,
+  aulas: z.array(aulaNovaSchema).min(1, { error: "Adicione ao menos uma aula." }),
+});
+export type NovoPlanoInput = z.infer<typeof novoPlanoSchema>;
+
+/** Registro de execução de uma aula (após a data prevista). */
+export const execucaoSchema = z
+  .object({
+    execucao: z.enum(["Pendente", "Integral", "Parcial", "NaoDado"]),
+    motivo: optStr,
+    docenteTipo: optStr,
+    docenteNome: optStr,
+  })
+  .refine((d) => d.execucao === "Integral" || d.execucao === "Pendente" || !!(d.motivo && d.motivo.trim()), {
+    error: "Informe o motivo quando a aula não for dada integralmente.",
+    path: ["motivo"],
+  });
+export type ExecucaoInput = z.infer<typeof execucaoSchema>;

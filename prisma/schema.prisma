@@ -806,15 +806,36 @@ enum StatusPlanoAula {
   Concluido
 }
 
+enum PeriodicidadePlano {
+  Mensal
+  Bimestral
+  Semestral
+  Anual
+}
+
+enum StatusExecucaoAula {
+  Pendente
+  Integral
+  Parcial
+  NaoDado
+}
+
+enum TipoDocente {
+  Titular
+  Substituto
+}
+
 model PlanoAula {
   id           String          @id @default(uuid()) @db.Uuid
   idDisciplina String          @map("id_disciplina") @db.Uuid
   idTurma      String          @map("id_turma") @db.Uuid
   idProfessor  String          @map("id_professor") @db.Uuid
-  objetivos    String?
-  metodologia  String?
-  status       StatusPlanoAula @default(EmElaboracao)
-  criadoEm     DateTime        @default(now()) @map("criado_em")
+  objetivos     String?
+  metodologia   String?
+  periodicidade PeriodicidadePlano?
+  dataInicio    DateTime?           @map("data_inicio") @db.Date
+  status        StatusPlanoAula     @default(EmElaboracao)
+  criadoEm      DateTime            @default(now()) @map("criado_em")
   atualizadoEm DateTime        @updatedAt @map("atualizado_em")
 
   disciplina   Disciplina           @relation(fields: [idDisciplina], references: [id], onDelete: Cascade)
@@ -839,8 +860,12 @@ model AulaPlanejada {
   objetivos     String?
   dataPrevista  DateTime? @map("data_prevista") @db.Date
   cargaHoraria  Int?      @map("carga_horaria")
-  concluida     Boolean   @default(false)
-  dataConclusao DateTime? @map("data_conclusao")
+  concluida      Boolean            @default(false)
+  dataConclusao  DateTime?          @map("data_conclusao")
+  execucao       StatusExecucaoAula @default(Pendente)
+  motivoExecucao String?            @map("motivo_execucao")
+  docenteTipo    TipoDocente?       @map("docente_tipo")
+  docenteNome    String?            @map("docente_nome")
 
   plano       PlanoAula      @relation(fields: [idPlano], references: [id], onDelete: Cascade)
   materiais   AulaMaterial[]

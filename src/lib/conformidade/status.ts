@@ -31,11 +31,15 @@ export function varianteConformidade(
   return "warning";
 }
 
+export type ContagemExecucao = { Integral: number; Parcial: number; NaoDado: number; Pendente: number };
+
 export type SinaisPlano = {
   /** Status efetivo de conformidade (Pendente quando ainda não analisado). */
   statusConformidade: StatusConformidade;
-  /** % de evolução: aulas concluídas / total de aulas planejadas. */
-  evolucao: number;
+  /** Contagem de aulas por estado de execução (sem métrica percentual). */
+  contagem: ContagemExecucao;
+  /** Aulas efetivamente dadas (integral + parcial). */
+  dadas: number;
   /** Carga horária somada das aulas planejadas. */
   cargaSomada: number;
   /** Carga horária da disciplina (referência). */
@@ -57,13 +61,11 @@ export function calcularSinais(args: {
   statusPlano: StatusPlanoAula;
   conformidade: StatusConformidade | null;
   totalAulas: number;
-  aulasConcluidas: number;
+  contagem: ContagemExecucao;
   cargaSomada: number;
   cargaDisciplina: number;
 }): SinaisPlano {
   const statusConformidade = args.conformidade ?? "Pendente";
-  const evolucao =
-    args.totalAulas > 0 ? Math.round((args.aulasConcluidas / args.totalAulas) * 100) : 0;
   const cargaDivergente =
     args.cargaDisciplina > 0 && args.cargaSomada !== args.cargaDisciplina;
   const pendente = args.conformidade === null || args.conformidade === "Pendente";
@@ -72,7 +74,8 @@ export function calcularSinais(args: {
 
   return {
     statusConformidade,
-    evolucao,
+    contagem: args.contagem,
+    dadas: args.contagem.Integral + args.contagem.Parcial,
     cargaSomada: args.cargaSomada,
     cargaDisciplina: args.cargaDisciplina,
     cargaDivergente,

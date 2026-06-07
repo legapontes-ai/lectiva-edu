@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Pencil, CheckCircle2, Circle, Loader2, FileText, ExternalLink } from "lucide-react";
-import { alternarConclusaoAula, removerAula, removerMaterialAula } from "@/lib/planos/actions";
+import { useState } from "react";
+import { Pencil, ClipboardCheck, FileText, ExternalLink } from "lucide-react";
+import { removerAula, removerMaterialAula } from "@/lib/planos/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteButton } from "@/components/painel/delete-button";
 import { AulaForm } from "@/components/planos/aula-form";
+import { ExecucaoForm } from "@/components/planos/execucao-form";
 import { MaterialForm } from "@/components/planos/material-form";
+import { EXECUCAO_INFO } from "@/lib/validations/plano";
 
 type Material = { id: string; titulo: string; arquivoUrl: string | null };
 
@@ -24,20 +25,31 @@ export type AulaItemDados = {
   cargaHoraria: number | null;
   concluida: boolean;
   dataConclusaoLabel: string | null;
+  execucao: string;
+  motivoExecucao: string | null;
+  docenteTipo: string | null;
+  docenteNome: string | null;
   materiais: Material[];
 };
 
-export function AulaItem({ aula, podeEditar }: { aula: AulaItemDados; podeEditar: boolean }) {
-  const router = useRouter();
+export function AulaItem({
+  aula,
+  podeEditar,
+  professorTitular,
+}: {
+  aula: AulaItemDados;
+  podeEditar: boolean;
+  professorTitular: string;
+}) {
   const [editando, setEditando] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  function toggleConclusao() {
-    startTransition(async () => {
-      await alternarConclusaoAula(aula.id);
-      router.refresh();
-    });
-  }
+  const [registrando, setRegistrando] = useState(false);
+  const info = EXECUCAO_INFO[aula.execucao] ?? EXECUCAO_INFO.Pendente;
+  const docenteLabel =
+    aula.docenteTipo === "Substituto"
+      ? `Substituto${aula.docenteNome ? ` · ${aula.docenteNome}` : ""}`
+      : aula.docenteTipo === "Titular"
+        ? `Titular · ${professorTitular}`
+        : null;
 
   return (
     <Card>
@@ -50,18 +62,16 @@ export function AulaItem({ aula, podeEditar }: { aula: AulaItemDados; podeEditar
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-medium text-foreground">{aula.titulo}</h3>
-                {aula.concluida ? (
-                  <Badge variant="success">
-                    Ministrada{aula.dataConclusaoLabel ? ` · ${aula.dataConclusaoLabel}` : ""}
-                  </Badge>
-                ) : (
-                  <Badge variant="muted">Pendente</Badge>
-                )}
+                <Badge variant={info.variant}>{info.label}</Badge>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {aula.dataPrevistaLabel ? `Prevista: ${aula.dataPrevistaLabel}` : "Sem data prevista"}
                 {aula.cargaHoraria ? ` · ${aula.cargaHoraria}h` : ""}
+                {docenteLabel ? ` · ${docenteLabel}` : ""}
               </p>
+              {aula.motivoExecucao && (
+                <p className="mt-0.5 text-xs text-destructive">Motivo: {aula.motivoExecucao}</p>
+              )}
             </div>
           </div>
 
@@ -71,18 +81,12 @@ export function AulaItem({ aula, podeEditar }: { aula: AulaItemDados; podeEditar
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                onClick={toggleConclusao}
-                disabled={pending}
-                title={aula.concluida ? "Marcar como pendente" : "Marcar como ministrada"}
-                aria-label={aula.concluida ? "Marcar como pendente" : "Marcar como ministrada"}
+                onClick={() => setRegistrando((v) => !v)}
+                title="Registrar execução"
+                aria-label="Registrar execução"
+                aria-expanded={registrando}
               >
-                {pending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : aula.concluida ? (
-                  <CheckCircle2 className="size-4 text-success" />
-                ) : (
-                  <Circle className="size-4 text-muted-foreground" />
-                )}
+                <ClipboardCheck className="size-4 text-link" />
               </Button>
               <Button
                 type="button"
@@ -99,6 +103,23 @@ export function AulaItem({ aula, podeEditar }: { aula: AulaItemDados; podeEditar
             </div>
           )}
         </div>
+
+        {registrando && podeEditar && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <ExecucaoForm
+              idAula={aula.id}
+              professorTitular={professorTitular}
+              valores={{
+                execucao: aula.execucao,
+                motivo: aula.motivoExecucao ?? "",
+                docenteTipo: aula.docenteTipo ?? "Titular",
+                docenteNome: aula.docenteNome ?? "",
+              }}
+              onDone={() => setRegistrando(false)}
+              onCancel={() => setRegistrando(false)}
+            />
+          </div>
+        )}
 
         {!editando && (aula.conteudo || aula.objetivos) && (
           <div className="space-y-2 pl-10 text-sm">

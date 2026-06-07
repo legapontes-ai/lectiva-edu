@@ -5,6 +5,7 @@ import { ArrowLeft, AlertTriangle, FileWarning, ClipboardList } from "lucide-rea
 import { requirePermission } from "@/lib/auth/dal";
 import { prisma } from "@/lib/prisma";
 import { formatarData, formatarDataHora } from "@/lib/format";
+import { EXECUCAO_INFO } from "@/lib/validations/plano";
 import {
   calcularSinais,
   rotuloConformidade,
@@ -44,13 +45,17 @@ export default async function ConformidadeDetalhePage({
   if (!plano) notFound();
 
   const totalAulas = plano.aulas.length;
-  const aulasConcluidas = plano.aulas.filter((a) => a.concluida).length;
+  const contagem = { Integral: 0, Parcial: 0, NaoDado: 0, Pendente: 0 };
+  for (const a of plano.aulas) {
+    const k = (a.execucao in contagem ? a.execucao : "Pendente") as keyof typeof contagem;
+    contagem[k]++;
+  }
   const cargaSomada = plano.aulas.reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
   const sinais = calcularSinais({
     statusPlano: plano.status,
     conformidade: plano.conformidade?.status ?? null,
     totalAulas,
-    aulasConcluidas,
+    contagem,
     cargaSomada,
     cargaDisciplina: plano.disciplina.cargaHoraria,
   });
@@ -71,7 +76,7 @@ export default async function ConformidadeDetalhePage({
       <Card>
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-4">
           <Dado rotulo="Status do plano" valor={rotuloPlano(plano.status)} />
-          <Dado rotulo="Evolução" valor={`${sinais.evolucao}% (${aulasConcluidas}/${totalAulas})`} />
+          <Dado rotulo="Execução" valor={`${sinais.dadas}/${totalAulas} dada(s)`} />
           <Dado
             rotulo="Carga (aulas/disc.)"
             valor={`${sinais.cargaSomada}h / ${sinais.cargaDisciplina}h`}
@@ -139,8 +144,8 @@ export default async function ConformidadeDetalhePage({
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         {a.cargaHoraria != null && <span>{a.cargaHoraria}h</span>}
                         {a.dataPrevista && <span>{formatarData(a.dataPrevista)}</span>}
-                        <Badge variant={a.concluida ? "success" : "muted"}>
-                          {a.concluida ? "Concluída" : "Prevista"}
+                        <Badge variant={(EXECUCAO_INFO[a.execucao] ?? EXECUCAO_INFO.Pendente).variant}>
+                          {(EXECUCAO_INFO[a.execucao] ?? EXECUCAO_INFO.Pendente).label}
                         </Badge>
                       </span>
                     </div>

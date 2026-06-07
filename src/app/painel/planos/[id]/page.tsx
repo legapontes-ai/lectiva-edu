@@ -6,12 +6,11 @@ import { requirePermission, requireUser, temPermissao } from "@/lib/auth/dal";
 import { prisma } from "@/lib/prisma";
 import { rotulo } from "@/lib/enums";
 import { formatarData } from "@/lib/format";
-import { STATUS_PLANO_VALUES } from "@/lib/validations/plano";
+import { STATUS_PLANO_VALUES, EXECUCAO_INFO } from "@/lib/validations/plano";
 import { PageHeader } from "@/components/painel/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarraEvolucao } from "@/components/planos/barra-evolucao";
 import { PlanoTabs } from "@/components/planos/plano-tabs";
 import { PlanoDetalhesForm } from "@/components/planos/plano-detalhes-form";
 import { AulaForm } from "@/components/planos/aula-form";
@@ -73,6 +72,10 @@ export default async function PlanoDetalhePage({
           cargaHoraria: true,
           concluida: true,
           dataConclusao: true,
+          execucao: true,
+          motivoExecucao: true,
+          docenteTipo: true,
+          docenteNome: true,
           materiais: { select: { id: true, titulo: true, arquivoUrl: true } },
         },
       },
@@ -127,17 +130,20 @@ export default async function PlanoDetalhePage({
     },
   });
 
-  // Evolução: por carga horária somada das aulas; senão, por contagem.
+  // Acompanhamento por contagem de estados de execução (sem métrica percentual).
   const totalAulas = plano.aulas.length;
-  const concluidas = plano.aulas.filter((a) => a.concluida).length;
   const chTotal = plano.aulas.reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
-  const chConcluida = plano.aulas.filter((a) => a.concluida).reduce((s, a) => s + (a.cargaHoraria ?? 0), 0);
-  const pct =
-    chTotal > 0
-      ? Math.round((chConcluida / chTotal) * 100)
-      : totalAulas > 0
-        ? Math.round((concluidas / totalAulas) * 100)
-        : 0;
+  const cont = { Integral: 0, Parcial: 0, NaoDado: 0, Pendente: 0 };
+  for (const a of plano.aulas) {
+    const k = (a.execucao in cont ? a.execucao : "Pendente") as keyof typeof cont;
+    cont[k]++;
+  }
+  const contagens = [
+    { label: "Integral", n: cont.Integral, variant: "success" as const },
+    { label: "Parcial", n: cont.Parcial, variant: "warning" as const },
+    { label: "Não dada", n: cont.NaoDado, variant: "danger" as const },
+    { label: "Pendentes", n: cont.Pendente, variant: "muted" as const },
+  ];
 
   const aulasOpcoes = plano.aulas.map((a) => ({ id: a.id, titulo: `${a.ordem}. ${a.titulo}` }));
 
@@ -169,14 +175,17 @@ export default async function PlanoDetalhePage({
               <CardTitle className="text-base">Evolução do plano</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-muted-foreground">
-                  {concluidas} de {totalAulas} aula(s) ministrada(s)
-                  {chTotal > 0 ? ` · ${chConcluida}/${chTotal}h da disciplina` : ""}
-                </span>
-                <span className="font-heading text-2xl font-bold text-primary">{pct}%</span>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {contagens.map((c) => (
+                  <div key={c.label} className="rounded-lg border border-border p-3 text-center">
+                    <p className="font-heading text-2xl font-bold text-foreground">{c.n}</p>
+                    <Badge variant={c.variant} className="mt-1">{c.label}</Badge>
+                  </div>
+                ))}
               </div>
-              <BarraEvolucao percentual={pct} />
+              <p className="text-xs text-muted-foreground">
+                Total: {totalAulas} aula(s){chTotal > 0 ? ` · ${chTotal}h planejada(s)` : ""}.
+              </p>
               <div className="grid gap-3 pt-2 text-sm sm:grid-cols-2">
                 <div className="rounded-lg bg-muted p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -273,8 +282,8 @@ export default async function PlanoDetalhePage({
                           {a.cargaHoraria ? `${a.cargaHoraria}h` : "—"}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={a.concluida ? "success" : "info"}>
-                            {a.concluida ? "Ministrada" : "Prevista"}
+                          <Badge variant={(EXECUCAO_INFO[a.execucao] ?? EXECUCAO_INFO.Pendente).variant}>
+                            {(EXECUCAO_INFO[a.execucao] ?? EXECUCAO_INFO.Pendente).label}
                           </Badge>
                         </td>
                       </tr>
@@ -307,6 +316,7 @@ export default async function PlanoDetalhePage({
                 <AulaItem
                   key={a.id}
                   podeEditar={podeEditar}
+                  professorTitular={plano.professor.nome}
                   aula={{
                     id: a.id,
                     ordem: a.ordem,
@@ -318,6 +328,10 @@ export default async function PlanoDetalhePage({
                     cargaHoraria: a.cargaHoraria,
                     concluida: a.concluida,
                     dataConclusaoLabel: a.dataConclusao ? formatarData(a.dataConclusao) : null,
+                    execucao: a.execucao,
+                    motivoExecucao: a.motivoExecucao,
+                    docenteTipo: a.docenteTipo,
+                    docenteNome: a.docenteNome,
                     materiais: a.materiais,
                   }}
                 />
