@@ -58,6 +58,7 @@ type SeedUser = {
 
 const USERS: SeedUser[] = [
   { key: "admin", email: "admin@lectiva.edu", senha: "Admin@2026", nome: "Administrador Geral", perfil: PERFIS.ADMIN },
+  { key: "gestor", email: "gestor@lectiva.edu", senha: "Gestor@2026", nome: "Gestor do Sistema", perfil: PERFIS.GESTOR },
   { key: "coord", email: "coordenacao@lectiva.edu", senha: "Coord@2026", nome: "Carla Menezes", perfil: PERFIS.COORDENACAO },
   { key: "secretaria", email: "secretaria@lectiva.edu", senha: "Secret@2026", nome: "Sandra Lima", perfil: PERFIS.SECRETARIA },
   { key: "prof1", email: "professor1@lectiva.edu", senha: "Prof@2026", nome: "Prof. Dr. Ricardo Alves", perfil: PERFIS.PROFESSOR },

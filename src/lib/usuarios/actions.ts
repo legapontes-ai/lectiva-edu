@@ -11,7 +11,7 @@ import { criarAuthUsuario, removerAuthUsuario } from "@/lib/usuarios/service";
 
 type Result = { erro?: string };
 
-async function vinculoDoPerfil(idPerfil: string): Promise<{ nome: string; vinculo: "Aluno" | "Professor" | "Coordenacao" | "Secretaria" | "Admin" } | null> {
+async function vinculoDoPerfil(idPerfil: string): Promise<{ nome: string; vinculo: "Aluno" | "Professor" | "Coordenacao" | "Secretaria" | "Admin" | "Gestor" } | null> {
   const perfil = await prisma.perfil.findUnique({ where: { id: idPerfil } });
   if (!perfil) return null;
   return { nome: perfil.nome, vinculo: VINCULO_POR_PERFIL[perfil.nome] ?? "Secretaria" };

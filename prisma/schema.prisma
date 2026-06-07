@@ -24,6 +24,7 @@ enum Vinculo {
   Coordenacao
   Secretaria
   Admin
+  Gestor
 }
 
 enum SituacaoUsuario {

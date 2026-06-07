@@ -54,6 +54,15 @@ export const PERMISSOES = [
   // LGPD / logs
   "lgpd.gerenciar",
   "logs.ver",
+  // v1.1 — Gestor do Sistema / autocadastro / parâmetros
+  "autocadastro.gerenciar",
+  "parametros.gerenciar",
+  // v1.1 — Plano de aulas / conformidade
+  "planos.elaborar",
+  "planos.ver",
+  "planos.conformidade",
+  "notas.gerenciar",
+  "diario.gerenciar",
 ] as const;
 
 export type Permissao = (typeof PERMISSOES)[number];
@@ -61,6 +70,7 @@ export type Permissao = (typeof PERMISSOES)[number];
 /** Nomes canônicos dos 5 perfis. */
 export const PERFIS = {
   ADMIN: "Administrador Geral",
+  GESTOR: "Gestor do Sistema",
   COORDENACAO: "Coordenação Acadêmica",
   PROFESSOR: "Professor",
   SECRETARIA: "Secretaria Acadêmica",
@@ -70,6 +80,18 @@ export const PERFIS = {
 /** Permissões concedidas a cada perfil no seed inicial. */
 export const PERMISSOES_POR_PERFIL: Record<string, Permissao[]> = {
   [PERFIS.ADMIN]: [PERMISSAO_ADMIN_FULL],
+  // Gestor do Sistema: administração delegada (sem admin.full).
+  [PERFIS.GESTOR]: [
+    "usuarios.gerenciar",
+    "perfis.gerenciar",
+    "autocadastro.gerenciar",
+    "parametros.gerenciar",
+    "planos.conformidade",
+    "planos.ver",
+    "relatorios.ver",
+    "dashboard.ver",
+    "logs.ver",
+  ],
   [PERFIS.COORDENACAO]: [
     "cursos.gerenciar",
     "turmas.gerenciar",
@@ -82,6 +104,8 @@ export const PERMISSOES_POR_PERFIL: Record<string, Permissao[]> = {
     "frequencia.gerenciar",
     "avaliacao.gerenciar",
     "certificados.validar",
+    "planos.conformidade",
+    "planos.ver",
     "relatorios.ver",
     "dashboard.ver",
     "mensagens.responder",
@@ -95,6 +119,10 @@ export const PERMISSOES_POR_PERFIL: Record<string, Permissao[]> = {
     "avaliacao.ver",
     "avaliacao.gerenciar",
     "comunicados.gerenciar",
+    "planos.elaborar",
+    "planos.ver",
+    "notas.gerenciar",
+    "diario.gerenciar",
     "mensagens.responder",
     "dashboard.ver",
   ],
@@ -123,8 +151,12 @@ export const PERMISSOES_POR_PERFIL: Record<string, Permissao[]> = {
 };
 
 /** Vínculo padrão associado a cada perfil. */
-export const VINCULO_POR_PERFIL: Record<string, "Aluno" | "Professor" | "Coordenacao" | "Secretaria" | "Admin"> = {
+export const VINCULO_POR_PERFIL: Record<
+  string,
+  "Aluno" | "Professor" | "Coordenacao" | "Secretaria" | "Admin" | "Gestor"
+> = {
   [PERFIS.ADMIN]: "Admin",
+  [PERFIS.GESTOR]: "Gestor",
   [PERFIS.COORDENACAO]: "Coordenacao",
   [PERFIS.PROFESSOR]: "Professor",
   [PERFIS.SECRETARIA]: "Secretaria",

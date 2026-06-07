@@ -26,8 +26,15 @@ describe("can()", () => {
 });
 
 describe("PERMISSOES_POR_PERFIL", () => {
-  it("define os 5 perfis", () => {
-    expect(Object.keys(PERMISSOES_POR_PERFIL)).toHaveLength(5);
+  it("define os 6 perfis (inclui Gestor do Sistema)", () => {
+    expect(Object.keys(PERMISSOES_POR_PERFIL)).toHaveLength(6);
+  });
+
+  it("o Gestor administra usuários e autocadastro, mas não tem admin.full", () => {
+    const perms = PERMISSOES_POR_PERFIL[PERFIS.GESTOR];
+    expect(can(perms, "autocadastro.gerenciar")).toBe(true);
+    expect(can(perms, "usuarios.gerenciar")).toBe(true);
+    expect(can(perms, "certificados.gerenciar")).toBe(false);
   });
 
   it("o aluno acessa a própria área mas não gerencia usuários", () => {
