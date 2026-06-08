@@ -88,14 +88,13 @@ export async function alterarSituacaoUsuario(id: string, situacao: "Ativo" | "In
 
 export async function excluirUsuario(id: string): Promise<Result> {
   const ator = await requirePermission("usuarios.gerenciar");
-  if (id === ator.id) return { erro: "Você não pode excluir a própria conta." };
-  try {
-    await prisma.usuario.delete({ where: { id } });
-    await removerAuthUsuario(id);
-    await registrarLog({ idUsuario: ator.id, perfil: ator.vinculo, acao: "USUARIO_EXCLUIDO", modulo: "Seguranca", resultado: id });
-  } catch {
-    return { erro: "Não foi possível excluir (há registros vinculados a este usuário)." };
-  }
+  if (id === ator.id) return { erro: "Você não pode inativar a própria conta." };
+  const alvo = await prisma.usuario.findUnique({ where: { id }, select: { id: true } });
+  if (!alvo) return { erro: "Usuário não encontrado." };
+  // Soft-delete: inativa em vez de apagar (preserva histórico). O acesso é
+  // bloqueado pelo gate de sessão, que rejeita usuários fora de "Ativo".
+  await prisma.usuario.update({ where: { id }, data: { situacao: "Inativo" } });
+  await registrarLog({ idUsuario: ator.id, perfil: ator.vinculo, acao: "USUARIO_INATIVADO", modulo: "Seguranca", resultado: id });
   revalidatePath("/painel/usuarios");
   return {};
 }

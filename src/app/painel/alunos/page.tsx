@@ -74,7 +74,11 @@ export default async function AlunosPage() {
                           <Button variant="ghost" size="icon-sm" render={<Link href={`/painel/alunos/${a.id}`} />} title="Editar">
                             <Pencil className="size-4" />
                           </Button>
-                          <DeleteButton action={excluirAluno.bind(null, a.id)} />
+                          <DeleteButton
+                            action={excluirAluno.bind(null, a.id)}
+                            label="Inativar"
+                            confirmacao="Inativar este aluno? O acesso é bloqueado, mas o histórico (matrículas, notas, financeiro) é preservado. É possível reativar depois."
+                          />
                         </div>
                       </td>
                     )}

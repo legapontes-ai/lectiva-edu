@@ -84,16 +84,18 @@ export async function atualizarAluno(id: string, input: EditarAlunoInput): Promi
 
 export async function excluirAluno(id: string): Promise<Result> {
   const ator = await requirePermission("alunos.gerenciar");
-  try {
-    const aluno = await prisma.aluno.findUnique({ where: { id } });
-    if (!aluno) return { erro: "Aluno não encontrado." };
-    // Apaga o usuário; aluno cai por cascata (onDelete: Cascade).
-    await prisma.usuario.delete({ where: { id: aluno.idUsuario } });
-    await removerAuthUsuario(aluno.idUsuario);
-    await registrarLog({ idUsuario: ator.id, perfil: ator.vinculo, acao: "ALUNO_EXCLUIDO", modulo: "Alunos", resultado: aluno.nome });
-  } catch {
-    return { erro: "Não foi possível excluir (há matrículas, notas ou registros financeiros vinculados)." };
-  }
+  const aluno = await prisma.aluno.findUnique({
+    where: { id },
+    select: { id: true, idUsuario: true, nome: true },
+  });
+  if (!aluno) return { erro: "Aluno não encontrado." };
+  // Soft-delete: inativa aluno + usuário (preserva matrículas, notas, frequência
+  // e financeiro). O acesso é bloqueado pelo gate de sessão.
+  await prisma.$transaction([
+    prisma.aluno.update({ where: { id }, data: { situacaoAcademica: "Inativo" } }),
+    prisma.usuario.update({ where: { id: aluno.idUsuario }, data: { situacao: "Inativo" } }),
+  ]);
+  await registrarLog({ idUsuario: ator.id, perfil: ator.vinculo, acao: "ALUNO_INATIVADO", modulo: "Alunos", resultado: aluno.nome });
   revalidatePath("/painel/alunos");
   return {};
 }

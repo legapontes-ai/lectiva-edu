@@ -67,7 +67,11 @@ export default async function UsuariosPage() {
                       <Button variant="ghost" size="icon-sm" render={<Link href={`/painel/usuarios/${u.id}`} />} title="Editar">
                         <Pencil className="size-4" />
                       </Button>
-                      <DeleteButton action={excluirUsuario.bind(null, u.id)} />
+                      <DeleteButton
+                        action={excluirUsuario.bind(null, u.id)}
+                        label="Inativar"
+                        confirmacao="Inativar este usuário? O acesso é bloqueado, mas a conta e o histórico são preservados. É possível reativar depois."
+                      />
                     </div>
                   </td>
                 </tr>
