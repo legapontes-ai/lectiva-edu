@@ -752,10 +752,21 @@ model LogAuditoria {
   @@map("log_auditoria")
 }
 
+enum BaseLegal {
+  Consentimento
+  ExecucaoContrato
+  ObrigacaoLegal
+  LegitimoInteresse
+  ProtecaoVida
+  TutelaSaude
+  ExercicioDireitos
+}
+
 model Consentimento {
   id              String                @id @default(uuid()) @db.Uuid
   idTitular       String                @map("id_titular") @db.Uuid
   finalidade      String
+  baseLegal       BaseLegal             @default(Consentimento) @map("base_legal")
   dataConsentimento DateTime            @default(now()) @map("data_consentimento")
   versaoPolitica  String                @map("versao_politica")
   canalColeta     String?               @map("canal_coleta")

@@ -148,6 +148,7 @@ export async function criarMatricula(
         data: {
           idTitular: authId,
           finalidade: "Matrícula e gestão acadêmica",
+          baseLegal: "Consentimento",
           versaoPolitica: "1.0",
           canalColeta: "Matrícula online",
         },

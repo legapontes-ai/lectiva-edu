@@ -10,6 +10,16 @@ import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Consentimentos (LGPD)" };
 
+const BASE_LEGAL: Record<string, string> = {
+  Consentimento: "Consentimento",
+  ExecucaoContrato: "Execução de contrato",
+  ObrigacaoLegal: "Obrigação legal",
+  LegitimoInteresse: "Legítimo interesse",
+  ProtecaoVida: "Proteção da vida",
+  TutelaSaude: "Tutela da saúde",
+  ExercicioDireitos: "Exercício de direitos",
+};
+
 export default async function ConsentimentosPage() {
   await requirePermission("lgpd.gerenciar");
 
@@ -38,6 +48,7 @@ export default async function ConsentimentosPage() {
                 <tr>
                   <th className="px-4 py-3 font-semibold">Titular</th>
                   <th className="px-4 py-3 font-semibold">Finalidade</th>
+                  <th className="px-4 py-3 font-semibold">Base legal</th>
                   <th className="px-4 py-3 font-semibold">Versão</th>
                   <th className="px-4 py-3 font-semibold">Data</th>
                   <th className="px-4 py-3 font-semibold">Situação</th>
@@ -52,6 +63,7 @@ export default async function ConsentimentosPage() {
                       <div className="text-xs text-muted-foreground">{c.titular.email}</div>
                     </td>
                     <td className="max-w-md px-4 py-3 text-muted-foreground">{c.finalidade}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{BASE_LEGAL[c.baseLegal] ?? c.baseLegal}</td>
                     <td className="px-4 py-3 text-muted-foreground">{c.versaoPolitica}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       {formatarData(c.dataConsentimento)}
