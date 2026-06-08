@@ -462,6 +462,7 @@ async function main() {
   }
   const alunosSeed = alunosBase.map((a) => ({
     key: `aluno${a.n}`,
+    n: a.n,
     id: alunoId(a.n),
     cpf: a.cpf,
     curso: a.curso,
@@ -572,6 +573,157 @@ async function main() {
       };
     });
     await prisma.parcela.createMany({ data: parcelas });
+  }
+
+  console.log("→ Jornada acadêmica (frequência + avaliações do MBA)…");
+  const mbaAlunos = alunosSeed.filter((a) => a.curso === ID.cursoMba);
+  const mbaDiscIds = disciplinas.map((d) => d.id);
+  // Perfil de desempenho por aluno: a maioria aprovada; aluno2 (Mariana) e
+  // múltiplos de 6 ficam pendentes (frequência < 75% e/ou nota < 7).
+  const desempenho = (n: number) =>
+    n === 2
+      ? { freq: 62, nota: 5.5 }
+      : n % 6 === 0
+        ? { freq: 70, nota: 6.0 }
+        : { freq: 86 + (n % 5) * 2, nota: 7.5 + (n % 4) * 0.4 };
+
+  const ENCONTROS = 6;
+  const freqRows: {
+    idAluno: string; idDisciplina: string; idTurma: string; dataAula: Date;
+    tipoEncontro: "Presencial"; situacao: "Presente" | "Ausente"; percentualAcumulado: number | null;
+  }[] = [];
+  const avalRows: {
+    idAluno: string; idDisciplina: string; idTurma: string; idProfessor: string;
+    tipo: "Disciplina"; dataAplicacao: Date; nota: number; formaColeta: "Identificada";
+    percentualFrequencia: number; situacao: "Aprovado" | "Recuperacao" | "Reprovado";
+  }[] = [];
+  for (const a of mbaAlunos) {
+    const perf = desempenho(a.n);
+    for (const d of disciplinas) {
+      const presentes = Math.round((perf.freq / 100) * ENCONTROS);
+      for (let i = 0; i < ENCONTROS; i++) {
+        freqRows.push({
+          idAluno: a.id, idDisciplina: d.id, idTurma: ID.turmaMba,
+          dataAula: new Date(2026, 2, 4 + i * 7), tipoEncontro: "Presencial",
+          situacao: i < presentes ? "Presente" : "Ausente",
+          percentualAcumulado: i === ENCONTROS - 1 ? perf.freq : null,
+        });
+      }
+      avalRows.push({
+        idAluno: a.id, idDisciplina: d.id, idTurma: ID.turmaMba, idProfessor: d.prof,
+        tipo: "Disciplina", dataAplicacao: new Date(2026, 4, 25), nota: perf.nota,
+        formaColeta: "Identificada", percentualFrequencia: perf.freq,
+        situacao: perf.nota >= 7 ? "Aprovado" : perf.nota >= 5 ? "Recuperacao" : "Reprovado",
+      });
+    }
+  }
+  await prisma.frequencia.deleteMany({ where: { idAluno: { in: mbaAlunos.map((a) => a.id) }, idDisciplina: { in: mbaDiscIds } } });
+  await prisma.frequencia.createMany({ data: freqRows });
+  await prisma.avaliacao.deleteMany({ where: { tipo: "Disciplina", idAluno: { in: mbaAlunos.map((a) => a.id) }, idDisciplina: { in: mbaDiscIds } } });
+  await prisma.avaliacao.createMany({ data: avalRows });
+
+  console.log("→ Plano de aulas de exemplo (MBA101)…");
+  const discPlano = disciplinas[0];
+  // Reusa um plano já existente para (disciplina, turma) — há @@unique nesse par.
+  const planoExistente = await prisma.planoAula.findUnique({
+    where: { idDisciplina_idTurma: { idDisciplina: discPlano.id, idTurma: ID.turmaMba } },
+    select: { id: true },
+  });
+  const planoId = planoExistente?.id ?? "91110000-0000-4000-8000-000000000001";
+  const aulaId = (ordem: number) => `92110000-0000-4000-8000-${String(ordem).padStart(12, "0")}`;
+  const planoCampos = {
+    objetivos: "Desenvolver competências de análise contábil e financeira para a tomada de decisão executiva.",
+    metodologia: "Aulas expositivas, estudos de caso e resolução de exercícios aplicados.",
+    periodicidade: "Mensal" as const, dataInicio: new Date("2026-03-04"), status: "EmAndamento" as const,
+  };
+  await prisma.planoAula.upsert({
+    where: { id: planoId },
+    update: planoCampos,
+    create: { id: planoId, idDisciplina: discPlano.id, idTurma: ID.turmaMba, idProfessor: discPlano.prof, ...planoCampos },
+  });
+  const aulas: { ordem: number; titulo: string; exec: "Integral" | "Parcial" | "Pendente"; motivo?: string }[] = [
+    { ordem: 1, titulo: "Demonstrações financeiras", exec: "Integral" },
+    { ordem: 2, titulo: "Análise de balanço", exec: "Integral" },
+    { ordem: 3, titulo: "Fluxo de caixa", exec: "Parcial", motivo: "Parte do conteúdo de DRE adiada por feriado; será retomada na próxima aula." },
+    { ordem: 4, titulo: "Indicadores de rentabilidade", exec: "Integral" },
+    { ordem: 5, titulo: "Custos e formação de preço", exec: "Pendente" },
+    { ordem: 6, titulo: "Orçamento empresarial", exec: "Pendente" },
+  ];
+  await prisma.aulaPlanejada.deleteMany({ where: { idPlano: planoId } });
+  for (const au of aulas) {
+    const concluida = au.exec !== "Pendente";
+    const substituto = au.ordem === 4;
+    await prisma.aulaPlanejada.create({
+      data: {
+        id: aulaId(au.ordem), idPlano: planoId, ordem: au.ordem, titulo: au.titulo,
+        conteudo: `Conteúdo previsto: ${au.titulo}.`,
+        dataPrevista: new Date(2026, 2, 4 + (au.ordem - 1) * 7), cargaHoraria: 4,
+        concluida, dataConclusao: concluida ? new Date(2026, 2, 4 + (au.ordem - 1) * 7) : null,
+        execucao: au.exec, motivoExecucao: au.motivo ?? null,
+        docenteTipo: concluida ? (substituto ? "Substituto" : "Titular") : null,
+        docenteNome: concluida && substituto ? "Prof. Me. Carlos Nogueira" : null,
+      },
+    });
+  }
+  const atividades = [
+    { id: "93110000-0000-4000-8000-000000000001", nome: "Prova individual", peso: 6, escalaMax: 10, data: new Date("2026-04-15") },
+    { id: "93110000-0000-4000-8000-000000000002", nome: "Projeto aplicado", peso: 4, escalaMax: 10, data: new Date("2026-05-20") },
+  ];
+  await prisma.atividadeAvaliativa.deleteMany({ where: { idPlano: planoId } });
+  await prisma.atividadeAvaliativa.createMany({ data: atividades.map((at) => ({ id: at.id, idPlano: planoId, nome: at.nome, peso: at.peso, escalaMax: at.escalaMax, data: at.data })) });
+  const notaRows: { idAtividade: string; idAluno: string; nota: number }[] = [];
+  for (const a of mbaAlunos.slice(0, 6)) {
+    const perf = desempenho(a.n);
+    for (const at of atividades) notaRows.push({ idAtividade: at.id, idAluno: a.id, nota: Math.min(10, perf.nota + (at.nome.includes("Projeto") ? 0.5 : 0)) });
+  }
+  await prisma.notaAtividade.deleteMany({ where: { idAtividade: { in: atividades.map((a) => a.id) } } });
+  await prisma.notaAtividade.createMany({ data: notaRows });
+
+  await prisma.diarioClasse.deleteMany({ where: { idPlano: planoId } });
+  await prisma.diarioClasse.createMany({
+    data: aulas.filter((a) => a.exec !== "Pendente").map((a) => ({
+      idPlano: planoId, idAula: aulaId(a.ordem), data: new Date(2026, 2, 4 + (a.ordem - 1) * 7),
+      conteudoMinistrado: `Ministrado: ${a.titulo}.${a.exec === "Parcial" ? " (parcial)" : ""}`,
+      observacoes: a.exec === "Parcial" ? (a.motivo ?? null) : null,
+    })),
+  });
+
+  await prisma.ocorrencia.deleteMany({ where: { idAula: aulaId(1), idTurma: ID.turmaMba } });
+  await prisma.ocorrencia.create({
+    data: {
+      idAluno: alunoId(2), idTurma: ID.turmaMba, idAula: aulaId(1), tipo: "Frequência",
+      descricao: "Faltas recorrentes nas primeiras aulas; aluno(a) orientado(a) pela coordenação.",
+      data: new Date("2026-03-18"), registradoPor: userIdPorKey.get("prof1")!,
+    },
+  });
+
+  await prisma.analiseConformidade.upsert({
+    where: { idPlano: planoId },
+    update: {},
+    create: {
+      idPlano: planoId, status: "Conforme",
+      observacoes: "Plano aderente à ementa e à carga horária da disciplina.",
+      analisadoPor: userIdPorKey.get("coord")!, dataAnalise: new Date("2026-03-01"),
+    },
+  });
+
+  console.log("→ Mensagens de exemplo (atendimento)…");
+  const coordUserId = userIdPorKey.get("coord")!;
+  const msgs: { id: string; rem: string; tipo: "Duvida" | "Solicitacao" | "Mensagem"; assunto: string | null; conteudo: string; resposta: string | null; status: "Aberta" | "Respondida" }[] = [
+    { id: "95110000-0000-4000-8000-000000000001", rem: "aluno1", tipo: "Duvida", assunto: "Prazo do projeto aplicado", conteudo: "Qual a data final de entrega do projeto aplicado de Contabilidade?", resposta: "A entrega é 20/05/2026, pelo portal do aluno.", status: "Respondida" },
+    { id: "95110000-0000-4000-8000-000000000002", rem: "aluno2", tipo: "Solicitacao", assunto: "Revisão de frequência", conteudo: "Gostaria de revisar o registro das minhas faltas em Contabilidade.", resposta: null, status: "Aberta" },
+    { id: "95110000-0000-4000-8000-000000000003", rem: "aluno5", tipo: "Mensagem", assunto: null, conteudo: "Bom dia! O material da aula 2 já está disponível na biblioteca?", resposta: null, status: "Aberta" },
+  ];
+  for (const m of msgs) {
+    await prisma.mensagemSolicitacao.upsert({
+      where: { id: m.id },
+      update: {},
+      create: {
+        id: m.id, idRemetente: userIdPorKey.get(m.rem)!, idDestinatario: coordUserId,
+        idDisciplina: m.rem === "aluno1" ? discPlano.id : null, tipo: m.tipo,
+        assunto: m.assunto, conteudo: m.conteudo, resposta: m.resposta, status: m.status,
+      },
+    });
   }
 
   console.log("→ Modelos de certificado…");
