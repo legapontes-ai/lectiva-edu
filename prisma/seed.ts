@@ -49,6 +49,10 @@ const ID = {
   gradeMba: "e0000000-0000-4000-8000-000000000001",
 };
 
+// IDs determinísticos por índice (prof1→...001 = ID.prof1; aluno1→...001 = ID.aluno1).
+const profId = (n: number) => `b0000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const alunoId = (n: number) => `a0000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
 type SeedUser = {
   key: string;
   email: string;
@@ -57,16 +61,47 @@ type SeedUser = {
   perfil: string;
 };
 
+// Roster de personas: 1 admin, 1 gestor, 1 coordenação, 1 secretaria,
+// 5 professores e 30 alunos. Os 3 primeiros nomes de cada lista preservam os
+// usuários originais (idempotência: mesmos e-mails/keys reusam o Auth existente).
+const PROF_NOMES = [
+  "Prof. Dr. Ricardo Alves",
+  "Profa. Dra. Helena Souza",
+  "Prof. Dr. André Tavares",
+  "Profa. Dra. Beatriz Lima",
+  "Prof. Me. Carlos Nogueira",
+];
+
+const ALUNO_NOMES = [
+  "João Pedro Martins", "Mariana Costa", "Bruno Ferreira", "Gabriela Almeida",
+  "Rafael Souza", "Larissa Oliveira", "Thiago Ribeiro", "Juliana Carvalho",
+  "Felipe Andrade", "Camila Rocha", "Gustavo Pereira", "Patrícia Gomes",
+  "Rodrigo Barbosa", "Fernanda Dias", "Leonardo Cardoso", "Aline Moreira",
+  "Marcelo Teixeira", "Renata Azevedo", "Vinícius Lopes", "Tatiane Freitas",
+  "Diego Ramos", "Carolina Pinto", "Eduardo Nunes", "Priscila Castro",
+  "André Monteiro", "Vanessa Correia", "Lucas Farias", "Bianca Tavares",
+  "Otávio Mendes", "Sabrina Cunha",
+];
+
 const USERS: SeedUser[] = [
   { key: "admin", email: "admin@lectiva.edu", senha: "Admin@2026", nome: "Administrador Geral", perfil: PERFIS.ADMIN },
   { key: "gestor", email: "gestor@lectiva.edu", senha: "Gestor@2026", nome: "Gestor do Sistema", perfil: PERFIS.GESTOR },
   { key: "coord", email: "coordenacao@lectiva.edu", senha: "Coord@2026", nome: "Carla Menezes", perfil: PERFIS.COORDENACAO },
   { key: "secretaria", email: "secretaria@lectiva.edu", senha: "Secret@2026", nome: "Sandra Lima", perfil: PERFIS.SECRETARIA },
-  { key: "prof1", email: "professor1@lectiva.edu", senha: "Prof@2026", nome: "Prof. Dr. Ricardo Alves", perfil: PERFIS.PROFESSOR },
-  { key: "prof2", email: "professor2@lectiva.edu", senha: "Prof@2026", nome: "Profa. Dra. Helena Souza", perfil: PERFIS.PROFESSOR },
-  { key: "aluno1", email: "aluno1@lectiva.edu", senha: "Aluno@2026", nome: "João Pedro Martins", perfil: PERFIS.ALUNO },
-  { key: "aluno2", email: "aluno2@lectiva.edu", senha: "Aluno@2026", nome: "Mariana Costa", perfil: PERFIS.ALUNO },
-  { key: "aluno3", email: "aluno3@lectiva.edu", senha: "Aluno@2026", nome: "Bruno Ferreira", perfil: PERFIS.ALUNO },
+  ...PROF_NOMES.map((nome, i) => ({
+    key: `prof${i + 1}`,
+    email: `professor${i + 1}@lectiva.edu`,
+    senha: "Prof@2026",
+    nome,
+    perfil: PERFIS.PROFESSOR,
+  })),
+  ...ALUNO_NOMES.map((nome, i) => ({
+    key: `aluno${i + 1}`,
+    email: `aluno${i + 1}@lectiva.edu`,
+    senha: "Aluno@2026",
+    nome,
+    perfil: PERFIS.ALUNO,
+  })),
 ];
 
 // ---------------------------------------------------------------------------
@@ -309,6 +344,31 @@ async function main() {
     },
   });
 
+  const profsExtra = [
+    { n: 3, area: "Marketing e Estratégia Digital", tit: "Doutor em Administração", cpf: "300.000.000-03" },
+    { n: 4, area: "Gestão de Pessoas e Liderança", tit: "Doutora em Psicologia Organizacional", cpf: "400.000.000-04" },
+    { n: 5, area: "Gestão de Operações e Projetos", tit: "Mestre em Engenharia de Produção", cpf: "500.000.000-05" },
+  ];
+  for (const p of profsExtra) {
+    await prisma.professor.upsert({
+      where: { id: profId(p.n) },
+      update: {},
+      create: {
+        id: profId(p.n),
+        idUsuario: userIdPorKey.get(`prof${p.n}`)!,
+        nome: PROF_NOMES[p.n - 1],
+        cpf: p.cpf,
+        email: `professor${p.n}@lectiva.edu`,
+        telefone: `(19) 99999-000${p.n}`,
+        titulacao: p.tit,
+        areaAtuacao: p.area,
+        miniCurriculo: `${p.tit}, com atuação em ${p.area}.`,
+        lattes: `http://lattes.cnpq.br/000000000000000${p.n}`,
+        situacao: "Ativo",
+      },
+    });
+  }
+
   console.log("→ Módulos/eixos e disciplinas (MBA)…");
   const modulos = [
     { id: "f0000000-0000-4000-8000-000000000001", nome: "Eixo 1 — Fundamentos da Gestão", ordem: 1, ch: 144 },
@@ -380,11 +440,38 @@ async function main() {
   });
 
   console.log("→ Consentimentos LGPD + Alunos + Matrículas + Financeiro…");
-  const alunosSeed = [
-    { key: "aluno1", id: ID.aluno1, cpf: "333.333.333-33", curso: ID.cursoMba, turma: ID.turmaMba, valor: 18900, parcelas: 18, pagas: 3, inadimplente: false, protocolo: "MAT-2026-0001" },
-    { key: "aluno2", id: ID.aluno2, cpf: "444.444.444-44", curso: ID.cursoMba, turma: ID.turmaMba, valor: 18900, parcelas: 18, pagas: 1, inadimplente: true, protocolo: "MAT-2026-0002" },
-    { key: "aluno3", id: ID.aluno3, cpf: "555.555.555-55", curso: ID.cursoLato, turma: ID.turmaLato, valor: 12600, parcelas: 12, pagas: 2, inadimplente: false, protocolo: "MAT-2026-0003" },
+  // 30 alunos: 1–3 originais (preservados); 4–18 no MBA; 19–30 na Pós (Lato).
+  type AlunoBase = { n: number; cpf: string; curso: string; turma: string; valor: number; parcelas: number; pagas: number; inadimplente: boolean };
+  const alunosBase: AlunoBase[] = [
+    { n: 1, cpf: "333.333.333-33", curso: ID.cursoMba, turma: ID.turmaMba, valor: 18900, parcelas: 18, pagas: 3, inadimplente: false },
+    { n: 2, cpf: "444.444.444-44", curso: ID.cursoMba, turma: ID.turmaMba, valor: 18900, parcelas: 18, pagas: 1, inadimplente: true },
+    { n: 3, cpf: "555.555.555-55", curso: ID.cursoLato, turma: ID.turmaLato, valor: 12600, parcelas: 12, pagas: 2, inadimplente: false },
   ];
+  for (let n = 4; n <= 30; n++) {
+    const mba = n <= 18;
+    alunosBase.push({
+      n,
+      cpf: `${String(n).padStart(3, "0")}.000.000-${String(n).padStart(2, "0")}`,
+      curso: mba ? ID.cursoMba : ID.cursoLato,
+      turma: mba ? ID.turmaMba : ID.turmaLato,
+      valor: mba ? 18900 : 12600,
+      parcelas: mba ? 18 : 12,
+      pagas: n % 5,
+      inadimplente: n % 9 === 0,
+    });
+  }
+  const alunosSeed = alunosBase.map((a) => ({
+    key: `aluno${a.n}`,
+    id: alunoId(a.n),
+    cpf: a.cpf,
+    curso: a.curso,
+    turma: a.turma,
+    valor: a.valor,
+    parcelas: a.parcelas,
+    pagas: a.pagas,
+    inadimplente: a.inadimplente,
+    protocolo: `MAT-2026-${String(a.n).padStart(4, "0")}`,
+  }));
 
   for (const a of alunosSeed) {
     const userId = userIdPorKey.get(a.key)!;
