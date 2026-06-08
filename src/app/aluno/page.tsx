@@ -12,7 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { SituacaoMatricula } from "@prisma/client";
-import { requireUser } from "@/lib/auth/dal";
+import { requireUser, exigirSenhaDefinitiva } from "@/lib/auth/dal";
 import { sair } from "@/lib/auth/actions";
 import { prisma } from "@/lib/prisma";
 import { rotulo } from "@/lib/enums";
@@ -71,6 +71,7 @@ const EM_BREVE = [
 
 export default async function AreaAlunoPage() {
   const user = await requireUser();
+  exigirSenhaDefinitiva(user);
   if (user.vinculo !== "Aluno") redirect("/painel");
 
   const aluno = await prisma.aluno.findUnique({

@@ -14,6 +14,8 @@ export type SessionUser = {
   vinculo: Vinculo;
   perfilNome: string;
   permissoes: Set<string>;
+  /** Está usando senha provisória e precisa trocá-la antes de usar o sistema. */
+  deveTrocarSenha: boolean;
 };
 
 /**
@@ -40,6 +42,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     vinculo: usuario.vinculo,
     perfilNome: usuario.perfil.nome,
     permissoes: new Set(usuario.perfil.permissoes.map((p) => p.permissao)),
+    deveTrocarSenha: usuario.deveTrocarSenha,
   };
 });
 
@@ -50,9 +53,19 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * Bloqueia o uso do sistema enquanto a senha provisória não for trocada.
+ * Redireciona para /trocar-senha. Não aplicar em /trocar-senha nem em
+ * finalizarTrocaSenha (que usam requireUser, sem esta checagem) para evitar loop.
+ */
+export function exigirSenhaDefinitiva(user: SessionUser): void {
+  if (user.deveTrocarSenha) redirect("/trocar-senha");
+}
+
 /** Exige uma permissão; redireciona se não autorizado. */
 export async function requirePermission(permissao: Permissao): Promise<SessionUser> {
   const user = await requireUser();
+  exigirSenhaDefinitiva(user);
   if (!can(user.permissoes, permissao)) {
     redirect(`/painel/acesso-negado?permissao=${encodeURIComponent(permissao)}`);
   }

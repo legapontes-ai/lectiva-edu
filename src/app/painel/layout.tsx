@@ -1,5 +1,5 @@
 import { LogOut, Search } from "lucide-react";
-import { requireUser } from "@/lib/auth/dal";
+import { requireUser, exigirSenhaDefinitiva } from "@/lib/auth/dal";
 import { can } from "@/lib/auth/permissions";
 import { NAV_ITEMS } from "@/lib/painel/nav";
 import { sair } from "@/lib/auth/actions";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  exigirSenhaDefinitiva(user);
   const itens = NAV_ITEMS.filter((i) => can(user.permissoes, i.permissao));
   const iniciais = user.nome
     .split(" ")
