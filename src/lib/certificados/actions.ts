@@ -313,5 +313,15 @@ export async function baixarCertificado(id: string): Promise<{ url?: string; err
 
   const url = await urlAssinada(BUCKET, cert.arquivoPdf, 3600);
   if (!url) return { erro: "Não foi possível gerar o link de download." };
+
+  // Trilha de auditoria: registra quem baixou qual certificado e quando.
+  await registrarLog({
+    idUsuario: user.id,
+    perfil: user.vinculo,
+    acao: "CERTIFICADO_BAIXADO",
+    modulo: "Certificados",
+    resultado: id,
+  });
+
   return { url };
 }

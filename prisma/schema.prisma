@@ -406,6 +406,7 @@ model Professor {
   avaliacoes  Avaliacao[]
   planosAula  PlanoAula[]
 
+  @@index([situacao])
   @@map("professor")
 }
 
@@ -461,6 +462,8 @@ model Matricula {
 
   @@index([idAluno])
   @@index([idCurso])
+  @@index([idTurma])
+  @@index([situacao])
   @@map("matricula")
 }
 
@@ -590,6 +593,7 @@ model Frequencia {
 
   @@index([idAluno])
   @@index([idDisciplina])
+  @@index([dataAula])
   @@map("frequencia")
 }
 
@@ -714,6 +718,8 @@ model MensagemSolicitacao {
   disciplina   Disciplina? @relation(fields: [idDisciplina], references: [id])
 
   @@index([idDestinatario])
+  @@index([idRemetente])
+  @@index([status])
   @@map("mensagem_solicitacao")
 }
 
@@ -731,6 +737,8 @@ model LogAuditoria {
 
   @@index([idUsuario])
   @@index([dataHora])
+  @@index([acao])
+  @@index([modulo])
   @@map("log_auditoria")
 }
 
@@ -748,6 +756,7 @@ model Consentimento {
   matriculas Matricula[]
 
   @@index([idTitular])
+  @@index([situacao])
   @@map("consentimento")
 }
 
@@ -848,6 +857,7 @@ model PlanoAula {
 
   @@unique([idDisciplina, idTurma])
   @@index([idProfessor])
+  @@index([status])
   @@map("plano_aula")
 }
 
@@ -873,6 +883,7 @@ model AulaPlanejada {
   ocorrencias Ocorrencia[]
 
   @@index([idPlano])
+  @@index([dataPrevista])
   @@map("aula_planejada")
 }
 
@@ -916,6 +927,7 @@ model NotaAtividade {
 
   @@unique([idAtividade, idAluno])
   @@index([idAluno])
+  @@index([idAtividade])
   @@map("nota_atividade")
 }
 
