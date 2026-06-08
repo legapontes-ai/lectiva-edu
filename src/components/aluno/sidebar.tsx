@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Megaphone,
+  MessageSquare,
   Wallet,
   Award,
   type LucideIcon,
@@ -23,6 +24,7 @@ const ITENS: Item[] = [
   { href: "/aluno/frequencia", label: "Frequência", icon: CalendarCheck },
   { href: "/aluno/notas", label: "Notas", icon: ClipboardList },
   { href: "/aluno/comunicacoes", label: "Comunicações", icon: Megaphone },
+  { href: "/aluno/mensagens", label: "Atendimento", icon: MessageSquare },
   { href: "/aluno/financeiro", label: "Financeiro", icon: Wallet },
   { href: "/aluno/certificados", label: "Certificados", icon: Award },
 ];

@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   NotebookPen,
   ClipboardCheck,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const ICONS: Record<string, LucideIcon> = {
   library: Library,
   calendar: CalendarDays,
   comunicados: Megaphone,
+  messages: Inbox,
   frequency: CalendarCheck,
   assessment: ClipboardList,
   finance: Wallet,

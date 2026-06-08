@@ -23,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/painel/biblioteca", label: "Biblioteca", icon: "library", permissao: "materiais.ver" },
   { href: "/painel/calendario", label: "Calendário", icon: "calendar", permissao: "calendario.gerenciar" },
   { href: "/painel/comunicados", label: "Comunicados", icon: "comunicados", permissao: "comunicados.gerenciar" },
+  { href: "/painel/mensagens", label: "Mensagens", icon: "messages", permissao: "mensagens.responder" },
   // Avaliação
   { href: "/painel/frequencia", label: "Frequência", icon: "frequency", permissao: "frequencia.gerenciar" },
   { href: "/painel/avaliacao", label: "Avaliação", icon: "assessment", permissao: "avaliacao.ver" },
