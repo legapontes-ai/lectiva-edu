@@ -285,6 +285,11 @@ model PerfilPermissao {
 // ----------------------------------------------------------------------------
 // CURSO / ESTRUTURA ACADÊMICA
 // ----------------------------------------------------------------------------
+enum OrigemNota {
+  Avaliacao
+  PlanoDeAula
+}
+
 model Curso {
   id                  String          @id @default(uuid()) @db.Uuid
   nome                String
@@ -298,6 +303,11 @@ model Curso {
   modalidade          ModalidadeCurso
   metodologia         String?
   requisitosConclusao String?         @map("requisitos_conclusao")
+  // v1.x — Regras de aprovação/certificação parametrizadas pelo administrador.
+  notaMinimaAprovacao   Decimal    @default(7.00) @map("nota_minima_aprovacao") @db.Decimal(4, 2)
+  frequenciaMinima      Int        @default(75) @map("frequencia_minima")
+  origemNota            OrigemNota @default(Avaliacao) @map("origem_nota")
+  exigeTodasDisciplinas Boolean    @default(true) @map("exige_todas_disciplinas")
   idCoordenador       String?         @map("id_coordenador") @db.Uuid
   situacao            SituacaoCurso   @default(Ativo)
   criadoEm            DateTime        @default(now()) @map("criado_em")

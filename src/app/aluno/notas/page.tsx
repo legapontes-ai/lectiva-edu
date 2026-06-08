@@ -3,6 +3,7 @@ import type { SituacaoAvaliacao } from "@prisma/client";
 import { ClipboardList } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { alunoDaSessao } from "@/lib/aluno/queries";
+import { consolidarSituacao } from "@/lib/academico/consolidacao";
 import { formatarData } from "@/lib/format";
 import { PageHeader } from "@/components/painel/page-header";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
@@ -46,11 +47,83 @@ export default async function AlunoNotasPage() {
       })
     : [];
 
+  // Situação por curso conforme as regras parametrizadas pelo administrador.
+  const matriculas = aluno
+    ? await prisma.matricula.findMany({
+        where: { idAluno: aluno.id, situacao: { in: ["Ativa", "Concluida"] } },
+        include: {
+          curso: {
+            select: {
+              id: true,
+              nome: true,
+              notaMinimaAprovacao: true,
+              frequenciaMinima: true,
+              origemNota: true,
+              exigeTodasDisciplinas: true,
+            },
+          },
+        },
+        orderBy: { dataMatricula: "desc" },
+      })
+    : [];
+
+  const cursosVistos = new Set<string>();
+  const situacaoCursos: { curso: string; aprovado: boolean; semGrade: boolean; disciplinas: Awaited<ReturnType<typeof consolidarSituacao>>["disciplinas"] }[] = [];
+  for (const m of matriculas) {
+    if (cursosVistos.has(m.curso.id)) continue;
+    cursosVistos.add(m.curso.id);
+    const r = await consolidarSituacao(aluno!.id, m.curso.id, {
+      notaMinimaAprovacao: Number(m.curso.notaMinimaAprovacao),
+      frequenciaMinima: m.curso.frequenciaMinima,
+      origemNota: m.curso.origemNota,
+      exigeTodasDisciplinas: m.curso.exigeTodasDisciplinas,
+    });
+    situacaoCursos.push({ curso: m.curso.nome, aprovado: r.aprovadoNoCurso, semGrade: r.semGrade, disciplinas: r.disciplinas });
+  }
+
   const vazio = avaliacoes.length === 0 && notasAtividade.length === 0;
 
   return (
     <div className="space-y-6">
       <PageHeader titulo="Notas" descricao="Seu desempenho nas avaliações e atividades." />
+
+      {situacaoCursos.filter((c) => !c.semGrade).map((c) => (
+        <Card key={c.curso}>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="space-y-1">
+                <CardTitle className="text-base">{c.curso}</CardTitle>
+                <CardDescription>Situação conforme as regras do curso.</CardDescription>
+              </div>
+              <Badge variant={c.aprovado ? "success" : "warning"}>
+                {c.aprovado ? "Apto à certificação" : "Pendente"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {c.disciplinas.map((d) => (
+                <li
+                  key={d.idDisciplina}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2 first:pt-0 last:pb-0"
+                >
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-foreground">{d.nome}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Nota: {d.nota != null ? d.nota.toFixed(1) : "—"} · Frequência:{" "}
+                      {d.frequencia != null ? `${d.frequencia}%` : "—"}
+                      {d.motivo ? ` · ${d.motivo}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant={d.aprovada ? "success" : "muted"}>
+                    {d.aprovada ? "Aprovada" : "Pendente"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ))}
 
       {vazio ? (
         <Card>

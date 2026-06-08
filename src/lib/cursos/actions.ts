@@ -24,6 +24,10 @@ function toData(d: CursoInput) {
     metodologia: d.metodologia ?? null,
     requisitosConclusao: d.requisitosConclusao ?? null,
     idCoordenador: d.idCoordenador ?? null,
+    notaMinimaAprovacao: d.notaMinimaAprovacao,
+    frequenciaMinima: d.frequenciaMinima,
+    origemNota: d.origemNota,
+    exigeTodasDisciplinas: d.exigeTodasDisciplinas,
   };
 }
 

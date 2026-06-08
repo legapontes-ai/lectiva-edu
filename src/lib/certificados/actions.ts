@@ -8,6 +8,7 @@ import { requirePermission, requireUser } from "@/lib/auth/dal";
 import { can } from "@/lib/auth/permissions";
 import { registrarLog } from "@/lib/audit";
 import { uploadDocumento, urlAssinada } from "@/lib/storage";
+import { consolidarSituacao } from "@/lib/academico/consolidacao";
 import { formatarData } from "@/lib/format";
 import { renderCertificadoPDF } from "@/lib/certificados/pdf";
 import {
@@ -147,7 +148,15 @@ export async function emitirCertificado(
     prisma.aluno.findUnique({ where: { id: idAluno }, select: { id: true, nome: true } }),
     prisma.curso.findUnique({
       where: { id: idCurso },
-      select: { id: true, nome: true, cargaHoraria: true },
+      select: {
+        id: true,
+        nome: true,
+        cargaHoraria: true,
+        notaMinimaAprovacao: true,
+        frequenciaMinima: true,
+        origemNota: true,
+        exigeTodasDisciplinas: true,
+      },
     }),
     prisma.modeloCertificado.findUnique({
       where: { id: idModelo },
@@ -170,14 +179,28 @@ export async function emitirCertificado(
     };
   }
 
-  // Requisito 2 — aprovação registrada (Avaliacao com situacao "Aprovado").
-  const aprovacao = await prisma.avaliacao.findFirst({
-    where: { idAluno, situacao: "Aprovado" },
-    select: { id: true },
+  // Requisito 2 — aprovação acadêmica conforme as REGRAS PARAMETRIZADAS do curso
+  // (nota mínima, frequência mínima, fonte da nota, todas/uma disciplina).
+  const consol = await consolidarSituacao(idAluno, idCurso, {
+    notaMinimaAprovacao: Number(curso.notaMinimaAprovacao),
+    frequenciaMinima: curso.frequenciaMinima,
+    origemNota: curso.origemNota,
+    exigeTodasDisciplinas: curso.exigeTodasDisciplinas,
   });
-  if (!aprovacao) {
+  if (consol.semGrade) {
+    // Curso sem grade cadastrada: mantém a regra legada (≥1 avaliação "Aprovado").
+    const aprovacao = await prisma.avaliacao.findFirst({
+      where: { idAluno, situacao: "Aprovado" },
+      select: { id: true },
+    });
+    if (!aprovacao) {
+      return {
+        erro: "Emissão bloqueada: não há avaliação com situação \"Aprovado\" registrada para o aluno.",
+      };
+    }
+  } else if (!consol.aprovadoNoCurso) {
     return {
-      erro: "Emissão bloqueada: não há avaliação com situação \"Aprovado\" registrada para o aluno.",
+      erro: `Emissão bloqueada — pendências de aprovação: ${consol.pendencias.join(" | ")}.`,
     };
   }
 

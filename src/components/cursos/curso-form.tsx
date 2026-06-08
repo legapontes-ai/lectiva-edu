@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
-import { cursoSchema, type CursoInput } from "@/lib/validations/curso";
+import { cursoSchema, type CursoInput, ORIGEM_NOTA } from "@/lib/validations/curso";
 import { criarCurso, atualizarCurso } from "@/lib/cursos/actions";
 import { TIPO_CURSO, MODALIDADE_CURSO, SITUACAO_CURSO } from "@/lib/enums";
 import { Field } from "@/components/painel/field";
@@ -45,6 +45,10 @@ export function CursoForm({
       metodologia: curso?.metodologia ?? "",
       requisitosConclusao: curso?.requisitosConclusao ?? "",
       idCoordenador: curso?.idCoordenador ?? "",
+      notaMinimaAprovacao: curso?.notaMinimaAprovacao ?? 7,
+      frequenciaMinima: curso?.frequenciaMinima ?? 75,
+      origemNota: curso?.origemNota ?? "Avaliacao",
+      exigeTodasDisciplinas: curso?.exigeTodasDisciplinas ?? true,
     },
   });
 
@@ -129,6 +133,33 @@ export function CursoForm({
       <Field label="Requisitos de conclusão" htmlFor="requisitosConclusao" error={errors.requisitosConclusao?.message}>
         <Textarea id="requisitosConclusao" {...register("requisitosConclusao")} />
       </Field>
+
+      <fieldset className="space-y-4 rounded-lg border border-border p-4">
+        <legend className="px-1 text-sm font-semibold text-foreground">
+          Regras de aprovação e certificação
+        </legend>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Nota mínima de aprovação" htmlFor="notaMinimaAprovacao" error={errors.notaMinimaAprovacao?.message}>
+            <Input id="notaMinimaAprovacao" type="number" step="0.1" min={0} max={10} {...register("notaMinimaAprovacao")} />
+          </Field>
+          <Field label="Frequência mínima (%)" htmlFor="frequenciaMinima" error={errors.frequenciaMinima?.message}>
+            <Input id="frequenciaMinima" type="number" min={0} max={100} {...register("frequenciaMinima")} />
+          </Field>
+          <Field label="Fonte da nota" htmlFor="origemNota" error={errors.origemNota?.message}>
+            <Select id="origemNota" {...register("origemNota")}>
+              {ORIGEM_NOTA.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Aprovação exige" htmlFor="exigeTodasDisciplinas" error={errors.exigeTodasDisciplinas?.message}>
+            <Select id="exigeTodasDisciplinas" {...register("exigeTodasDisciplinas")}>
+              <option value="true">Todas as disciplinas da grade</option>
+              <option value="false">Ao menos uma disciplina</option>
+            </Select>
+          </Field>
+        </div>
+      </fieldset>
 
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>

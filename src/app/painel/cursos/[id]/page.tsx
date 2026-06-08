@@ -35,6 +35,10 @@ export default async function EditarCursoPage({ params }: { params: Promise<{ id
     metodologia: curso.metodologia ?? "",
     requisitosConclusao: curso.requisitosConclusao ?? "",
     idCoordenador: curso.idCoordenador ?? "",
+    notaMinimaAprovacao: Number(curso.notaMinimaAprovacao),
+    frequenciaMinima: curso.frequenciaMinima,
+    origemNota: curso.origemNota,
+    exigeTodasDisciplinas: curso.exigeTodasDisciplinas,
   };
 
   return (
