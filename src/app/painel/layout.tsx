@@ -1,7 +1,6 @@
 import { LogOut, Search } from "lucide-react";
 import { requireUser, exigirSenhaDefinitiva } from "@/lib/auth/dal";
-import { can } from "@/lib/auth/permissions";
-import { NAV_ITEMS } from "@/lib/painel/nav";
+import { filtrarGruposPorPermissao } from "@/lib/painel/nav";
 import { sair } from "@/lib/auth/actions";
 import { Sidebar } from "@/components/painel/sidebar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   exigirSenhaDefinitiva(user);
-  const itens = NAV_ITEMS.filter((i) => can(user.permissoes, i.permissao));
+  const grupos = filtrarGruposPorPermissao(user.permissoes);
   const iniciais = user.nome
     .split(" ")
     .filter(Boolean)
@@ -20,7 +19,7 @@ export default async function PainelLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar items={itens} />
+      <Sidebar groups={grupos} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center gap-4 border-b border-border bg-card px-4 sm:px-6">
           <label className="relative hidden flex-1 sm:block" aria-label="Buscar">
